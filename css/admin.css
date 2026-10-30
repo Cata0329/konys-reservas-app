@@ -1,0 +1,171 @@
+/* =====================================================================
+   Konys Pizza · Panel de administración
+   Se carga DESPUÉS de styles.css y reutiliza sus tokens y componentes.
+   ===================================================================== */
+
+body.admin { background: var(--crema-panel); background-image: none; }
+
+/* ---------- Acceso ---------- */
+.acceso { display: grid; grid-template-columns: 1fr 1.1fr; min-height: 100vh; background: var(--crema); }
+.acceso__arte { background: var(--verde); color: var(--crema); position: relative; overflow: hidden; padding: 48px 56px; display: flex; flex-direction: column; justify-content: space-between; }
+.acceso__arte .logo { color: var(--crema); }
+.acceso__arte .pizza { position: absolute; left: 6%; top: 18%; width: 72%; height: auto; }
+.acceso__arte::after { content: ''; position: absolute; right: -80px; bottom: -80px; width: 240px; height: 240px; border-radius: 50%; background: var(--rosa); }
+.acceso__lema { position: relative; z-index: 1; font-family: var(--fuente-titulos); font-style: italic; font-size: 32px; line-height: 1.1; max-width: 12ch; }
+.acceso__formulario { display: grid; align-content: center; padding: 48px; }
+.acceso__caja { width: min(440px, 100%); }
+.acceso__caja h1 { font-size: clamp(36px, 4vw, 48px); line-height: 1.04; }
+.acceso__caja > p { color: var(--texto-suave); margin: 14px 0 28px; }
+.tarjeta-acceso { background: var(--blanco); border: 1.5px solid var(--carbon); border-radius: var(--r-tarjeta); padding: 32px; display: grid; gap: 18px; }
+.campo-clave { position: relative; }
+.campo-clave .entrada { padding-right: 52px; }
+.campo-clave__ver {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border: 0;
+  background: transparent; border-radius: 8px; display: grid; place-items: center; cursor: pointer;
+}
+.acceso__volver { display: inline-flex; gap: 8px; align-items: center; margin-top: 24px; color: var(--verde); font-weight: 500; text-underline-offset: 4px; }
+
+/* ---------- Estructura del panel ---------- */
+.panel-admin { display: grid; grid-template-columns: 248px 1fr; min-height: 100vh; }
+.lateral {
+  background: var(--verde); color: var(--crema); padding: 28px 16px; display: flex; flex-direction: column; gap: 32px;
+  position: sticky; top: 0; height: 100vh;
+}
+.lateral .logo { color: var(--crema); padding: 0 14px; }
+.lateral .logo__marca { font-size: 30px; }
+.lateral nav { display: grid; gap: 6px; }
+.lateral a, .lateral button {
+  display: flex; align-items: center; gap: 14px; padding: 12px 14px; border-radius: 14px; color: var(--crema);
+  text-decoration: none; font-weight: 600; background: transparent; border: 0; cursor: pointer; text-align: left; width: 100%;
+}
+.lateral a:hover, .lateral button:hover { background: rgba(255, 245, 230, .08); }
+.lateral a[aria-current='page'] { background: var(--limon); color: var(--carbon); }
+.lateral__pie { margin-top: auto; border-top: 1px solid rgba(255, 245, 230, .18); padding-top: 18px; display: grid; gap: 6px; }
+
+.principal { padding: 40px 40px 80px; min-width: 0; }
+.principal__cabecera { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+.principal__cabecera h1 { font-size: clamp(36px, 4vw, 48px); line-height: 1.04; }
+.principal__cabecera p { color: var(--texto-suave); margin-top: 6px; }
+
+/* ---------- Tarjetas de métricas ---------- */
+.metricas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+.metrica { background: var(--blanco); border: 1px solid var(--borde-suave); border-radius: var(--r-admin); padding: 22px 24px; }
+.metrica span { font-size: 14px; font-weight: 500; }
+.metrica strong { display: block; font-family: var(--fuente-titulos); font-size: clamp(30px, 3.4vw, 44px); line-height: 1.1; margin: 4px 0; }
+.metrica small { font-size: 13px; color: var(--texto-suave); }
+
+.caja { background: var(--blanco); border: 1px solid var(--borde-suave); border-radius: var(--r-admin); padding: 20px 24px; }
+.caja + .caja { margin-top: 20px; }
+.caja__cabecera { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+.caja__cabecera h2 { font-size: 24px; }
+
+/* ---------- Filtros ---------- */
+.filtros { display: grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap: 14px; align-items: end; margin-bottom: 20px; }
+.filtros .btn { min-height: 46px; }
+.filtros .entrada, .filtros .selector { min-height: 46px; }
+
+/* ---------- Tablas ---------- */
+.tabla-envoltura { position: relative; background: var(--blanco); border: 1px solid var(--borde-suave); border-radius: var(--r-admin); overflow-x: auto; }
+.tabla { width: 100%; border-collapse: collapse; font-size: 15px; }
+.tabla th {
+  text-align: left; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700;
+  padding: 16px 18px; background: var(--arena-clara); border-bottom: 1px solid var(--borde-suave); white-space: nowrap;
+}
+.tabla td { padding: 14px 18px; border-bottom: 1px solid #F0E8DA; vertical-align: middle; }
+.tabla tbody tr:last-child td { border-bottom: 0; }
+.tabla tbody tr:hover { background: #FFFBF4; }
+.tabla .fuerte { font-weight: 600; }
+.tabla__acciones { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: nowrap; }
+.tabla__pie { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 18px; background: var(--arena-clara); border-top: 1px solid var(--borde-suave); font-size: 14px; }
+.paginacion { display: flex; gap: 8px; }
+.paginacion button { min-width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--carbon); background: var(--blanco); font-weight: 600; cursor: pointer; }
+.paginacion button[aria-current='page'] { background: var(--verde); color: var(--crema); border-color: var(--verde); }
+.paginacion button:disabled { opacity: .4; cursor: not-allowed; }
+.selector-estado { min-height: 38px; padding: 6px 36px 6px 12px; font-size: 14px; width: auto; }
+.miniatura { width: 52px; height: 52px; border-radius: 12px; overflow: hidden; flex: none; background: #F4E3C4; display: grid; place-items: center; }
+.miniatura img, .miniatura svg { width: 100%; height: 100%; object-fit: cover; }
+.celda-plato { display: flex; align-items: center; gap: 14px; }
+.texto-tenue { color: var(--texto-suave); }
+
+/* ---------- Horarios ---------- */
+.semana { display: grid; gap: 10px; }
+.semana__escala { display: grid; grid-template-columns: 96px 1fr; font-size: 12px; color: var(--texto-suave); }
+.semana__marcas { position: relative; height: 16px; }
+.semana__marcas span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.semana__fila { display: grid; grid-template-columns: 96px 1fr; align-items: center; gap: 0; }
+.semana__pista { position: relative; height: 40px; border-radius: 10px; background: var(--arena-clara); border: 1px solid var(--borde-suave); }
+.semana__pista--cerrado { background: repeating-linear-gradient(135deg, #F3E9D7 0 6px, #EADDC6 6px 12px); border: 1px dashed #A9A391; display: grid; place-items: center; font-size: 13px; }
+.semana__bloque {
+  position: absolute; top: 5px; bottom: 5px; border-radius: 8px; display: grid; place-items: center; font-size: 12px; font-weight: 700;
+  white-space: nowrap; overflow: hidden; padding: 0 6px;
+}
+.semana__bloque--almuerzo { background: var(--limon); border: 1px solid var(--carbon); }
+.semana__bloque--noche { background: var(--verde); color: var(--crema); }
+.semana__bloque--inactivo { opacity: .35; }
+.leyenda-semana { display: flex; gap: 16px; font-size: 14px; }
+.leyenda-semana i { display: inline-block; width: 14px; height: 14px; border-radius: 4px; vertical-align: -2px; margin-right: 6px; }
+.tabla .entrada, .tabla .selector { min-height: 40px; padding: 6px 10px; width: auto; }
+.tabla .selector { padding-right: 34px; }
+.fila-edicion td { background: #FFFBF1; }
+.error-fila td { padding-top: 0; color: var(--error); font-size: 14px; }
+
+/* ---------- Cajón lateral (formularios) ---------- */
+.cajon { border: 0; padding: 0; margin: 0 0 0 auto; height: 100vh; max-height: 100vh; width: min(460px, 100vw); background: var(--blanco); color: var(--carbon); }
+.cajon::backdrop { background: rgba(37, 40, 36, .45); }
+.cajon form { display: grid; grid-template-rows: auto 1fr auto; height: 100%; }
+.cajon__cabecera { display: flex; justify-content: space-between; align-items: center; padding: 22px 28px; border-bottom: 1px solid var(--borde-suave); }
+.cajon__cabecera h2 { font-size: 28px; }
+.cajon__cuerpo { padding: 24px 28px; overflow-y: auto; display: grid; gap: 20px; align-content: start; }
+.cajon__pie { display: flex; justify-content: flex-end; gap: 12px; padding: 18px 28px; border-top: 1px solid var(--borde-suave); }
+.subida { border: 1.5px dashed #A9A391; border-radius: 16px; background: var(--arena-clara); padding: 18px; display: flex; gap: 16px; align-items: center; }
+.subida__vista { width: 64px; height: 64px; border-radius: 12px; background: #F4E3C4; display: grid; place-items: center; overflow: hidden; flex: none; }
+.subida__vista img { width: 100%; height: 100%; object-fit: cover; }
+.subida p { font-size: 13px; color: var(--texto-suave); margin-top: 6px; }
+.subida input[type='file'] { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.interruptor-caja { background: var(--arena-clara); border-radius: 14px; padding: 14px 16px; }
+
+/* ---------- Resumen ---------- */
+.resumen-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px; align-items: start; }
+.lista-proximas { list-style: none; margin: 0; padding: 0; }
+.lista-proximas li { display: grid; grid-template-columns: 136px 1fr auto; gap: 16px; align-items: center; padding: 16px 0; border-top: 1px solid #F0E8DA; }
+.lista-proximas b { font-family: var(--fuente-titulos); font-size: 22px; line-height: 1.1; white-space: nowrap; }
+.lista-proximas small { display: block; color: var(--texto-suave); }
+.accesos { display: grid; gap: 12px; }
+.accesos .btn { justify-content: flex-start; border-radius: 12px; }
+
+/* ---------- Adaptación ---------- */
+@media (max-width: 1100px) {
+  .filtros { grid-template-columns: 1fr 1fr; }
+  .resumen-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 860px) {
+  .acceso { grid-template-columns: 1fr; }
+  .acceso__arte { min-height: 220px; padding: 28px; }
+  .acceso__arte .pizza { left: auto; right: -40px; top: 20px; width: 220px; }
+  .acceso__formulario { padding: 32px 16px 48px; }
+  .panel-admin { grid-template-columns: 1fr; }
+  .lateral { position: sticky; top: 0; z-index: 20; height: auto; padding: 12px 16px; flex-direction: row; align-items: center; gap: 12px; overflow-x: auto; }
+  .lateral .logo { padding: 0; }
+  .lateral .logo__marca { font-size: 24px; }
+  .lateral nav { display: flex; gap: 4px; }
+  .lateral a, .lateral button { padding: 10px 12px; white-space: nowrap; width: auto; }
+  .lateral__pie { margin: 0 0 0 auto; border: 0; padding: 0; display: flex; }
+  .lateral__texto-largo { display: none; }
+  .principal { padding: 24px 16px 64px; }
+  .metricas { grid-template-columns: 1fr; }
+  .filtros { grid-template-columns: 1fr; }
+  .lista-proximas li { grid-template-columns: 1fr; gap: 6px; }
+  .semana__escala, .semana__fila { grid-template-columns: 76px 1fr; }
+}
+
+.muestra--almuerzo { background: var(--limon); border: 1px solid var(--carbon); }
+.muestra--noche { background: var(--verde); }
+.tabla-envoltura--separada { margin-top: 20px; }
+.tabla tbody + tbody { border-top: 2px solid var(--borde-suave); }
+.tabla th[scope='row'] {
+  text-align: left; font-weight: 700; font-size: 15px; letter-spacing: 0; text-transform: none;
+  padding: 14px 18px; background: transparent; border-bottom: 1px solid #F0E8DA; white-space: nowrap;
+}
+
+.celda-descripcion { min-width: 240px; }
+.celda-plato .fuerte { min-width: 130px; }

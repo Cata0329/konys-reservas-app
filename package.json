@@ -1,0 +1,15 @@
+{
+  "name": "konys-reservas-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sistema de reservas de Konys Pizza (HTML, CSS, JavaScript y Supabase)",
+  "type": "module",
+  "scripts": {
+    "config": "node scripts/generar-config.mjs",
+    "dev": "node scripts/generar-config.mjs && node scripts/servidor-local.mjs",
+    "test": "node --test \"tests/**/*.test.mjs\""
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.2.17"
+  }
+}

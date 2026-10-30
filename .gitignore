@@ -1,0 +1,11 @@
+# Secretos y configuración generada
+.env
+.env.*
+!.env.example
+js/config.js
+
+# Dependencias y sistema
+node_modules/
+.vercel/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel de administración · Konys Pizza</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#173F35">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23173F35'/%3E%3Ctext x='16' y='23' font-family='Georgia' font-style='italic' font-weight='700' font-size='20' fill='%23E9D56B' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,700;1,9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <script type="module" src="js/admin/app.js"></script>
+</head>
+<body class="admin">
+  <div id="aviso-config"></div>
+
+  <!-- Pantalla de acceso -->
+  <main class="acceso" id="acceso" hidden>
+    <div class="acceso__arte" aria-hidden="true">
+      <span class="logo"><span class="logo__marca">Konys</span><span class="logo__sello">PIZZA</span></span>
+      <div id="acceso-pizza"></div>
+      <p class="acceso__lema">Cada mesa, cada hora, bajo control.</p>
+    </div>
+    <div class="acceso__formulario">
+      <div class="acceso__caja">
+        <p class="antetitulo">Konys Pizza</p>
+        <h1>Panel de administración</h1>
+        <p>Ingresa la contraseña para gestionar mesas, horarios, reservas y carta.</p>
+        <form class="tarjeta-acceso" id="form-acceso" novalidate>
+          <div id="acceso-alerta"></div>
+          <div class="campo">
+            <label for="clave">Contraseña</label>
+            <div class="campo-clave">
+              <input class="entrada" id="clave" name="clave" type="password" autocomplete="current-password" required>
+              <button type="button" class="campo-clave__ver" id="ver-clave" aria-label="Mostrar contraseña" aria-pressed="false"></button>
+            </div>
+          </div>
+          <button class="btn btn--verde btn--bloque" type="submit" id="btn-ingresar">Ingresar</button>
+        </form>
+        <a class="acceso__volver" href="index.html" id="acceso-volver">Volver al sitio público</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Panel (solo visible con una sesión de administrador válida) -->
+  <div class="panel-admin" id="panel-admin" hidden>
+    <aside class="lateral">
+      <span class="logo"><span class="logo__marca">Konys</span><span class="logo__sello">ADMIN</span></span>
+      <nav aria-label="Secciones del panel" id="nav-admin">
+        <a href="#resumen" data-seccion="resumen"></a>
+        <a href="#mesas" data-seccion="mesas"></a>
+        <a href="#horarios" data-seccion="horarios"></a>
+        <a href="#reservas" data-seccion="reservas"></a>
+        <a href="#carta" data-seccion="carta"></a>
+      </nav>
+      <div class="lateral__pie">
+        <a href="index.html" id="ver-sitio"></a>
+        <button type="button" id="cerrar-sesion"></button>
+      </div>
+    </aside>
+    <main class="principal" id="principal" tabindex="-1"></main>
+  </div>
+</body>
+</html>

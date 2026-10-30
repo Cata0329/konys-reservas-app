@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reserva tu mesa · Konys Pizza</title>
+  <meta name="description" content="Reserva tu mesa en Konys Pizza en tres pasos: mesa, fecha y hora, y tus datos. Sin cuenta ni pagos.">
+  <meta name="theme-color" content="#173F35">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23173F35'/%3E%3Ctext x='16' y='23' font-family='Georgia' font-style='italic' font-weight='700' font-size='20' fill='%23E9D56B' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,700;1,9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script type="module" src="js/reserva.js"></script>
+</head>
+<body>
+  <a class="saltar" href="#contenido">Saltar al contenido</a>
+  <div id="aviso-config"></div>
+
+  <main class="contenedor" id="contenido">
+    <header class="reserva-cabecera">
+      <a href="index.html" class="logo" aria-label="Konys Pizza, volver al inicio"><span class="logo__marca">Konys</span><span class="logo__sello">PIZZA</span></a>
+      <a href="index.html" class="enlace-volver" id="volver-sitio"></a>
+    </header>
+
+    <div id="flujo">
+      <div class="reserva-titulo">
+        <h1 id="titulo-reserva" tabindex="-1">Reserva tu mesa</h1>
+        <p id="paso-texto" aria-live="polite">Paso 1 de 3 · Sin cuenta ni pagos</p>
+      </div>
+
+      <ol class="pasador" id="pasador" aria-label="Progreso de la reserva">
+        <li data-paso="1"><span class="pasador__num">1</span><span class="pasador__texto">Mesa</span></li>
+        <li data-paso="2"><span class="pasador__num">2</span><span class="pasador__texto">Fecha y hora</span></li>
+        <li data-paso="3"><span class="pasador__num">3</span><span class="pasador__texto">Tus datos</span></li>
+      </ol>
+
+      <div class="reserva-grid">
+        <section class="panel" id="panel" aria-live="polite">
+          <div class="esqueleto" aria-busy="true"><span></span><span></span><span></span></div>
+        </section>
+        <aside id="resumen" aria-label="Resumen de tu reserva"></aside>
+      </div>
+    </div>
+
+    <section id="confirmacion" class="confirmacion" hidden tabindex="-1" aria-labelledby="titulo-confirmacion"></section>
+  </main>
+</body>
+</html>
