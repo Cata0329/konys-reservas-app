@@ -60,15 +60,17 @@ export async function montar(cont) {
 
   async function cargarMetricas() {
     const dia = (f.periodo === 'hoy' || f.periodo === 'fecha') && f.fecha ? f.fecha : ahora.fecha;
+    const destino = $('#metricas', cont);
     try {
       const [filas, totales] = await Promise.all([api.obtenerReservasDelDia(dia), api.resumenReservas(ahora.fecha)]);
+      if (!destino.isConnected) return; // se cambió de sección mientras cargaba
       const cuenta = (e) => filas.filter((r) => r.estado === e).length;
       const proxima = filas.find((r) => r.estado === 'confirmada'
         && (dia > ahora.fecha || (dia === ahora.fecha && aMinutos(r.hora_inicio) >= ahora.minutos)));
       const activas = mesas.filter((m) => m.activa);
       const conReserva = new Set(filas.filter((r) => r.estado !== 'cancelada').map((r) => r.mesa_id)).size;
       const inactivas = mesas.filter((m) => !m.activa).map((m) => m.nombre);
-      $('#metricas').innerHTML = `
+      destino.innerHTML = `
         <div class="metrica metrica--total" data-testid="total-reservas"><span>Total de reservas (todas las fechas)</span><strong>${totales.total}</strong>
           <small>${plural(totales.proximas, 'próxima')} · ${plural(totales.completadas, 'completada')} · ${plural(totales.canceladas, 'cancelada')}</small></div>
         <div class="metrica"><span>Reservas del ${dia === ahora.fecha ? 'día' : formatoFechaTabla(dia)}</span><strong>${filas.length}</strong>
@@ -78,12 +80,12 @@ export async function montar(cont) {
         <div class="metrica"><span>Mesas con reserva</span><strong>${conReserva} de ${activas.length}</strong>
           <small>${inactivas.length ? `${esc(inactivas.join(', '))} ${inactivas.length > 1 ? 'están inactivas' : 'está inactiva'}` : 'Todas las mesas están activas'}</small></div>`;
     } catch (e) {
-      $('#metricas').innerHTML = alerta('error', 'No pudimos calcular las métricas.', e.message);
+      if (destino.isConnected) destino.innerHTML = alerta('error', 'No pudimos calcular las métricas.', e.message);
     }
   }
 
   async function cargar() {
-    const zona = $('#tabla-reservas');
+    const zona = $('#tabla-reservas', cont);
     zona.innerHTML = '<div class="caja"><div class="esqueleto"><span></span><span></span><span></span></div></div>';
     cargarMetricas();
     let resultado;
@@ -93,7 +95,9 @@ export async function montar(cont) {
         desdeFecha: f.periodo === 'proximas' ? ahora.fecha : null,
         mesaId: f.mesaId, estado: f.estado, pagina: f.pagina, porPagina: POR_PAGINA,
       });
+      if (!zona.isConnected) return; // se cambió de sección mientras cargaba
     } catch (e) {
+      if (!zona.isConnected) return;
       zona.innerHTML = alerta('error', 'No pudimos cargar las reservas.', e.message);
       return;
     }

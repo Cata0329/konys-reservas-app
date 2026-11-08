@@ -10,7 +10,7 @@
 //  - limita los intentos de acceso fallidos desde el navegador;
 //  - cierra la sesión de verdad tras 5 minutos sin actividad.
 import * as api from '../api.js';
-import { supabase, errorConfiguracion } from '../supabase.js';
+import { supabase, errorConfiguracion, CLAVE_SESION } from '../supabase.js';
 import { $, $$, esc, icono, alerta, pizza, botonCargando, marcarCampo } from '../ui.js';
 import { crearVigilante } from './inactividad.js';
 import * as resumen from './resumen.js';
@@ -178,10 +178,16 @@ async function salir(motivo, { propagar = true } = {}) {
       `Pasaron ${describirTiempo(vigilante.limiteMs)} sin actividad. Ingresa de nuevo para continuar.`),
     expirada: alerta('info', 'Tu sesión ya no es válida.', 'Ingresa de nuevo para continuar.'),
   };
-  mostrarAcceso(mensajes[motivo] ?? '');
+  // El panel se oculta en seguida, pero el mensaje final solo aparece cuando Supabase confirmó
+  // el cierre y la sesión guardada ya se borró.
+  mostrarAcceso(alerta('info', 'Cerrando sesión…'));
+  $('#btn-ingresar').disabled = true;
   if (estabaDentro || motivo !== 'manual') {
-    try { await api.cerrarSesion(); } catch { /* la sesión local ya se borró en cerrarSesion */ }
+    try { await api.cerrarSesion(); } catch { /* cerrarSesion ya borra la sesión local si el servidor falla */ }
   }
+  borrar(CLAVE_SESION); // por si el navegador no terminó de borrarla
+  $('#acceso-alerta').innerHTML = mensajes[motivo] ?? '';
+  actualizarBloqueo();
 }
 
 function describirTiempo(ms) {
@@ -278,18 +284,23 @@ async function mostrarSeccion() {
   });
   document.title = `${SECCIONES[clave].texto} · Panel Konys Pizza`;
   const principal = $('#principal');
-  principal.innerHTML = '<div class="esqueleto" aria-busy="true"><span></span><span></span><span></span></div>';
+  // Cada sección se dibuja en un contenedor propio: si se cambia de sección antes de que
+  // Supabase responda, la carga anterior queda en un contenedor ya retirado y no pisa la nueva.
+  const lienzo = document.createElement('div');
+  lienzo.className = 'principal__seccion';
+  lienzo.innerHTML = '<div class="esqueleto" aria-busy="true"><span></span><span></span><span></span></div>';
+  principal.replaceChildren(lienzo);
   principal.focus({ preventScroll: true });
   window.scrollTo({ top: 0 });
   try {
-    await SECCIONES[clave].modulo.montar(principal, { ir: (s) => { location.hash = s; } });
+    await SECCIONES[clave].modulo.montar(lienzo, { ir: (s) => { location.hash = s; } });
   } catch (e) {
-    if (!dentro) return; // la sesión se cerró mientras cargaba
-    principal.innerHTML = alerta('error', 'No pudimos cargar esta sección.', e.message ?? String(e),
+    if (!dentro || !lienzo.isConnected) return; // sesión cerrada o se cambió de sección mientras cargaba
+    lienzo.innerHTML = alerta('error', 'No pudimos cargar esta sección.', e.message ?? String(e),
       '<div class="alerta__acciones"><button type="button" class="btn btn--verde btn--pequeno" id="reintentar-seccion">Reintentar</button></div>');
     $('#reintentar-seccion').addEventListener('click', mostrarSeccion);
     if (e.codigo === 'SIN_PERMISO') {
-      principal.insertAdjacentHTML('beforeend', `<p class="texto-tenue">${esc('Si tu sesión expiró, cierra sesión e ingresa de nuevo.')}</p>`);
+      lienzo.insertAdjacentHTML('beforeend', `<p class="texto-tenue">${esc('Si tu sesión expiró, cierra sesión e ingresa de nuevo.')}</p>`);
     }
   }
 }
