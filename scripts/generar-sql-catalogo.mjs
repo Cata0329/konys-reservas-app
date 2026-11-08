@@ -6,7 +6,7 @@
 //  - "Recomendados" no es una categoría: se marca platos.recomendado = true.
 //  - Las subsecciones (p. ej. "KONYS CLÁSICAS") van en platos.subcategoria.
 //  - Precio 0 en la fuente = precio no publicado → NULL ("precio por confirmar").
-//  - Una imagen que la fuente usa en varios productos no se asigna a ninguno.
+//  - Se usa la foto oficial de cada producto, aunque la fuente la repita en dos productos.
 //  - Los platos de ejemplo del seed se ocultan y se marcan como 'prueba'.
 import { readFile, writeFile } from 'node:fs/promises';
 
@@ -59,7 +59,7 @@ const usosImagen = {};
 productos.forEach((p) => { if (p.imagen) usosImagen[p.imagen] = (usosImagen[p.imagen] ?? 0) + 1; });
 
 const filas = productos.map((p) => {
-  const imagen = p.imagen && usosImagen[p.imagen] === 1 ? p.imagen : null;
+  const imagen = p.imagen ?? null;
   const precio = p.precio > 0 ? p.precio : null;
   const variantes = JSON.stringify(p.variantes);
   return `  (${q(p.id_clubify)}, ${q(p.nombre)}, ${q(p.categoria)}, ${q(p.subcategoria)}, ${q(p.descripcion)}, ${precio ?? 'null'}, ${q(imagen)}, ${recomendados.has(p.id_clubify)}, ${arr(p.etiquetas)}, ${q(variantes)}::jsonb, ${p.orden})`;
@@ -123,7 +123,7 @@ commit;
 `;
 
 await writeFile(new URL('supabase/seed_carta_real.sql', raiz), sql, 'utf8');
-const sinImagen = productos.filter((p) => !(p.imagen && usosImagen[p.imagen] === 1)).map((p) => p.nombre);
+const sinImagen = productos.filter((p) => !p.imagen).map((p) => p.nombre);
 
 // ---------------------------------------------------------------------
 // docs/CATALOGO_KONYS.md (mismo origen de datos que el SQL)
@@ -138,7 +138,8 @@ const tablaCategorias = Object.entries(CATEGORIAS).map(([nombre, c], i) => {
   return `| ${i + 1} | ${nombre} | \`${c.id}\` | ${n} | ${celda(sec?.subtitulo) || '—'} | ${franja} |`;
 });
 const tablaProductos = productos.map((p, i) => {
-  const imagen = p.imagen && usosImagen[p.imagen] === 1 ? `[foto](${p.imagen})` : 'Sin foto individual (compartida en la fuente)';
+  const compartida = p.imagen && usosImagen[p.imagen] > 1 ? ' (la misma foto que usa la fuente para otro producto)' : '';
+  const imagen = p.imagen ? `[foto](${p.imagen})${compartida}` : 'Sin foto en la fuente';
   const extras = [
     recomendados.has(p.id_clubify) ? 'Recomendado' : '',
     p.etiquetas.length ? `Etiquetas: ${p.etiquetas.join(', ')}` : '',
@@ -156,7 +157,7 @@ const doc = `# Catálogo oficial de Konys Pizza
 - **Fecha de consulta:** ${menu.consultado.slice(0, 10)}.
 - **Método:** los datos se leyeron del JSON estructurado que la propia página entrega al navegador
   (secciones, productos, precios, variantes, etiquetas e imágenes), sin transcripción manual.
-- **Totales:** ${productos.length} productos únicos · ${tablaCategorias.length} categorías · ${productos.length - sinImagen.length} con foto oficial individual.
+- **Totales:** ${productos.length} productos únicos · ${tablaCategorias.length} categorías · ${productos.length - sinImagen.length} con foto oficial.
 
 ## Decisiones de modelado
 
@@ -167,7 +168,7 @@ const doc = `# Catálogo oficial de Konys Pizza
 | Variantes (Coca-Cola: «COCACOLA ZERO» +$0) | \`platos.variantes\` (JSON) | No se convierten en productos independientes. |
 | Adiciones opcionales (p. ej. «Papas enchuladas» +$2.000) | No se importan | Son para pedidos a domicilio; la reserva no gestiona pedidos (fuera del alcance). |
 | Precio $0 en «CONO CONGELADO» (se vende por sabor, desde 6 unidades) | \`precio = NULL\` → «Precio por confirmar» | Mostrar $0 sería un precio falso. |
-| La misma foto en «SODA ARANDANOS» y «SODA MARACUYÁ» | Sin imagen (ilustración rotulada «sin foto oficial») | No se puede verificar a cuál de los dos corresponde. |
+| La misma foto en «SODA ARANDANOS» y «SODA MARACUYÁ» | Se usa en los dos productos | Así aparece en la carta oficial de Konys (decisión del equipo, 8 nov 2026). |
 | Descripciones vacías (granizados, gaseosas, cervezas…) | \`descripcion = NULL\` | No se inventan ingredientes. |
 | Franja «disponible solo de 12 a 2:30 pm» (Menú Almuerzos) | \`categorias.disponible_desde = 12:00\`, \`disponible_hasta = 14:30\` | La carta muestra «Disponible ahora / Fuera de horario». |
 | Nombres con mayúsculas, emojis o erratas de la fuente | Se conservan tal cual | Regla: respetar los nombres originales. |
@@ -211,5 +212,5 @@ ${tablaProductos.join('\n')}
 await writeFile(new URL('docs/CATALOGO_KONYS.md', raiz), doc, 'utf8');
 console.log('✔ docs/CATALOGO_KONYS.md');
 console.log(`✔ seed_carta_real.sql: ${productos.length} productos, ${categoriasSql.length} categorías`);
-console.log(`  Sin imagen individual verificable: ${sinImagen.join(', ') || 'ninguno'}`);
+console.log(`  Sin foto en la fuente: ${sinImagen.join(', ') || 'ninguno'}`);
 console.log(`  Sin precio publicado: ${productos.filter((p) => !(p.precio > 0)).map((p) => p.nombre).join(', ') || 'ninguno'}`);

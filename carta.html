@@ -32,7 +32,11 @@
           <input class="entrada" id="buscar-carta" type="search" placeholder="Buscar un plato o bebida…" autocomplete="off">
           <p class="buscador-carta__estado" id="resultado-busqueda" aria-live="polite"></p>
         </div>
-        <div class="pestanas" role="tablist" aria-label="Categorías de la carta" id="pestanas"></div>
+        <div class="carta-nav" id="carta-nav">
+          <button type="button" class="carta-nav__flecha" id="pestanas-anterior" aria-label="Ver categorías anteriores"><span data-icono="chevronIzq"></span></button>
+          <div class="pestanas" role="tablist" aria-label="Categorías de la carta" id="pestanas"></div>
+          <button type="button" class="carta-nav__flecha" id="pestanas-siguiente" aria-label="Ver más categorías"><span data-icono="chevronDer"></span></button>
+        </div>
         <div id="carta-lista" role="tabpanel" aria-live="polite">
           <div class="esqueleto" aria-busy="true"><span></span><span></span><span></span></div>
         </div>

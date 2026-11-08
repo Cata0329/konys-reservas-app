@@ -9,6 +9,7 @@ const RECOMENDADOS = { id: 'recomendados', nombre: 'Recomendados', subtitulo: 'L
 const estado = { categorias: [], platos: [], categoria: null, busqueda: '' };
 
 montarLayout('carta');
+prepararFlechas();
 prepararBuscador();
 prepararFotosDeRespaldo();
 cargarCarta();
@@ -70,6 +71,27 @@ function seleccionarCategoria(id) {
     if (activa) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   });
   pintarCarta();
+}
+
+/** Flechas de la barra de categorías y desvanecido de los bordes según el desplazamiento. */
+function prepararFlechas() {
+  const barra = $('#pestanas');
+  const nav = $('#carta-nav');
+  const actualizar = () => {
+    const inicio = barra.scrollLeft <= 2;
+    const fin = barra.scrollLeft + barra.clientWidth >= barra.scrollWidth - 2;
+    nav.toggleAttribute('data-inicio', inicio);
+    nav.toggleAttribute('data-fin', fin);
+    $('#pestanas-anterior').disabled = inicio;
+    $('#pestanas-siguiente').disabled = fin;
+  };
+  const mover = (sentido) => barra.scrollBy({ left: sentido * barra.clientWidth * 0.7 });
+  $('#pestanas-anterior').addEventListener('click', () => mover(-1));
+  $('#pestanas-siguiente').addEventListener('click', () => mover(1));
+  barra.addEventListener('scroll', actualizar, { passive: true });
+  window.addEventListener('resize', actualizar);
+  new MutationObserver(actualizar).observe(barra, { childList: true });
+  actualizar();
 }
 
 function prepararBuscador() {

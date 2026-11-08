@@ -62,6 +62,7 @@ const aplicarMigracionesCatalogo = async () => {
   await db.exec(await readFile(new URL('seed_carta_real.sql', raiz), 'utf8'));
   await db.exec(await readFile(new URL('migrations/003_consulta_reservas.sql', raiz), 'utf8'));
   await db.exec(await readFile(new URL('migrations/004_horarios_reales.sql', raiz), 'utf8'));
+  await db.exec(await readFile(new URL('migrations/005_fotos_sodas.sql', raiz), 'utf8'));
 };
 
 const reservar = (mesa, fecha, hora, nombre = 'Laura Gómez', personas = 2) =>
@@ -294,13 +295,13 @@ test('catálogo: precios, imágenes, variantes y subcategorías tal como la fuen
   assert.deepEqual(bukara.etiquetas, ['PIZZA MASTER 2023']);
   assert.match(bukara.imagen_url, /^https:\/\/pub-[a-z0-9]+\.r2\.dev\/.+\.webp$/);
   assert.equal((await fila('CONO CONGELADO')).precio, null, 'precio no publicado → null, no $0');
-  assert.equal((await fila('SODA ARANDANOS')).imagen_url, null, 'imagen compartida → sin imagen');
+  assert.equal((await fila('SODA ARANDANOS')).imagen_url, (await fila('SODA MARACUYÁ')).imagen_url, 'misma foto oficial en las dos sodas');
   assert.deepEqual((await fila('Coca-Cola 400ml (pidela original o ZERO )')).variantes,
     [{ grupo: 'Tamaño', nombre: 'COCACOLA ZERO', delta: 0 }]);
   const almuerzos = await db.query(`select disponible_desde, disponible_hasta from public.categorias where id = 'menu_almuerzos'`);
   assert.deepEqual(almuerzos.rows[0], { disponible_desde: '12:00:00', disponible_hasta: '14:30:00' });
   const sinImagen = await db.query(`select count(*)::int n from public.platos where origen = 'oficial' and imagen_url is null`);
-  assert.equal(sinImagen.rows[0].n, 2);
+  assert.equal(sinImagen.rows[0].n, 0);
 });
 
 test('categorías: el público solo lee; el admin crea y no puede borrar una con platos', async () => {
@@ -374,4 +375,16 @@ test('revertir: revertir_carta_real.sql devuelve platos y categorías al respald
   await db.exec(await readFile(new URL('seed_carta_real.sql', raiz), 'utf8'));
   const de_nuevo = await db.query(`select count(*)::int n from public.platos where origen = 'oficial'`);
   assert.equal(de_nuevo.rows[0].n, 67);
+});
+
+test('fotos de sodas: la migración 005 completa las dos fotos sin pisar una subida por el admin', async () => {
+  // Estado de la base real tras la primera versión de la carta: las dos sodas sin foto.
+  await db.exec(`update public.platos set imagen_url = null where nombre in ('SODA ARANDANOS', 'SODA MARACUYÁ');
+                 update public.platos set imagen_url = 'https://ejemplo.supabase.co/storage/v1/object/public/imagenes/propia.webp'
+                 where nombre = 'SODA MARACUYÁ';`);
+  await db.exec(await readFile(new URL('migrations/005_fotos_sodas.sql', raiz), 'utf8'));
+  await db.exec(await readFile(new URL('migrations/005_fotos_sodas.sql', raiz), 'utf8'));
+  const r = await db.query(`select nombre, imagen_url from public.platos where nombre in ('SODA ARANDANOS', 'SODA MARACUYÁ') order by nombre`);
+  assert.match(r.rows[0].imagen_url, /r2\.dev\/.+572f69e412d25a5bb0ce\.webp$/);
+  assert.match(r.rows[1].imagen_url, /propia\.webp$/, 'no pisa la foto del administrador');
 });

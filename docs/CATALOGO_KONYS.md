@@ -7,7 +7,7 @@
 - **Fecha de consulta:** 2026-11-07.
 - **Método:** los datos se leyeron del JSON estructurado que la propia página entrega al navegador
   (secciones, productos, precios, variantes, etiquetas e imágenes), sin transcripción manual.
-- **Totales:** 67 productos únicos · 14 categorías · 65 con foto oficial individual.
+- **Totales:** 67 productos únicos · 14 categorías · 67 con foto oficial.
 
 ## Decisiones de modelado
 
@@ -18,7 +18,7 @@
 | Variantes (Coca-Cola: «COCACOLA ZERO» +$0) | `platos.variantes` (JSON) | No se convierten en productos independientes. |
 | Adiciones opcionales (p. ej. «Papas enchuladas» +$2.000) | No se importan | Son para pedidos a domicilio; la reserva no gestiona pedidos (fuera del alcance). |
 | Precio $0 en «CONO CONGELADO» (se vende por sabor, desde 6 unidades) | `precio = NULL` → «Precio por confirmar» | Mostrar $0 sería un precio falso. |
-| La misma foto en «SODA ARANDANOS» y «SODA MARACUYÁ» | Sin imagen (ilustración rotulada «sin foto oficial») | No se puede verificar a cuál de los dos corresponde. |
+| La misma foto en «SODA ARANDANOS» y «SODA MARACUYÁ» | Se usa en los dos productos | Así aparece en la carta oficial de Konys (decisión del equipo, 8 nov 2026). |
 | Descripciones vacías (granizados, gaseosas, cervezas…) | `descripcion = NULL` | No se inventan ingredientes. |
 | Franja «disponible solo de 12 a 2:30 pm» (Menú Almuerzos) | `categorias.disponible_desde = 12:00`, `disponible_hasta = 14:30` | La carta muestra «Disponible ahora / Fuera de horario». |
 | Nombres con mayúsculas, emojis o erratas de la fuente | Se conservan tal cual | Regla: respetar los nombres originales. |
@@ -111,9 +111,9 @@ Los platos de prueba no se borran automáticamente: no tienen dependencias, así
 | 39 | Piña Colada | Granizados | $12.990 | _(la fuente no publica descripción)_ | [foto](https://pub-6de3a37544604346a69b9836aed1c6cf.r2.dev/2f275d54-b08d-4b72-a197-d9c61299990a/products/7a465641461be8b18331.webp) | — | `303ca998-85ab-4c4c-b1ea-caa17b362dcf` |
 | 40 | Limonada de Coco | Granizados | $12.990 | _(la fuente no publica descripción)_ | [foto](https://pub-6de3a37544604346a69b9836aed1c6cf.r2.dev/2f275d54-b08d-4b72-a197-d9c61299990a/products/3abe69507b473960d1a5.webp) | — | `acc8ccae-22c5-42c2-ba79-3c1fefec3824` |
 | 41 | SODA LULO FIZZ | Sodas | $12.900 | Mermelada de Lulo, limón, soda, perlas explosivas de maracuyá y ginger ale macerados. Una bebida refrescante y deliciosa para acompañar tu experiencia ikonica. | [foto](https://pub-6de3a37544604346a69b9836aed1c6cf.r2.dev/2f275d54-b08d-4b72-a197-d9c61299990a/products/4e292ca476f7b3365f81.webp) | — | `774214e4-d7ac-4415-a5e0-f1c10ebfacca` |
-| 42 | SODA ARANDANOS | Sodas | $12.900 | Sirope natural de Arandanos, arandanos frescos, limón, soda, perlas explosivas de cereza. Una bebida refrescante y deliciosa para acompañar tu experiencia ikonica. | Sin foto individual (compartida en la fuente) | — | `0d5c856e-b81e-4338-9e04-f2b26e27ea37` |
+| 42 | SODA ARANDANOS | Sodas | $12.900 | Sirope natural de Arandanos, arandanos frescos, limón, soda, perlas explosivas de cereza. Una bebida refrescante y deliciosa para acompañar tu experiencia ikonica. | [foto](https://pub-6de3a37544604346a69b9836aed1c6cf.r2.dev/2f275d54-b08d-4b72-a197-d9c61299990a/products/572f69e412d25a5bb0ce.webp) (la misma foto que usa la fuente para otro producto) | — | `0d5c856e-b81e-4338-9e04-f2b26e27ea37` |
 | 43 | SODA FRUTOS ROJOS | Sodas | $12.900 | Sirope natural de frutos rojos, fresa picada, limón, soda, y perlas explosivas de cereza. Una bebida refrescante y deliciosa para acompañar tu experiencia ikonica. | [foto](https://pub-6de3a37544604346a69b9836aed1c6cf.r2.dev/2f275d54-b08d-4b72-a197-d9c61299990a/products/d59fb2dd0ce91aca3319.webp) | Recomendado | `3ead6925-f168-4b8a-93f9-a6c10bca12cb` |
-| 44 | SODA MARACUYÁ | Sodas | $12.900 | Sirope natural de maracuyá, limón, soda, perlas explosivas de maracuyá. Una bebida refrescante y deliciosa para acompañar tu experiencia ikonica. | Sin foto individual (compartida en la fuente) | — | `85d83346-4aa9-4195-8068-3e0d5c638076` |
+| 44 | SODA MARACUYÁ | Sodas | $12.900 | Sirope natural de maracuyá, limón, soda, perlas explosivas de maracuyá. Una bebida refrescante y deliciosa para acompañar tu experiencia ikonica. | [foto](https://pub-6de3a37544604346a69b9836aed1c6cf.r2.dev/2f275d54-b08d-4b72-a197-d9c61299990a/products/572f69e412d25a5bb0ce.webp) (la misma foto que usa la fuente para otro producto) | — | `85d83346-4aa9-4195-8068-3e0d5c638076` |
 | 45 | Limonada de Panela | Bebidas Frías | $7.000 | Deliciosa limonada de panela natural , una bebida Refrescante y perfecta. | [foto](https://pub-6de3a37544604346a69b9836aed1c6cf.r2.dev/2f275d54-b08d-4b72-a197-d9c61299990a/products/5f59a9856fd1c73fec34.webp) | — | `98a8f26e-9250-47dc-ad75-2b4148605d68` |
 | 46 | Postobon 400ml | Bebidas Frías | $6.000 | _(la fuente no publica descripción)_ | [foto](https://pub-6de3a37544604346a69b9836aed1c6cf.r2.dev/2f275d54-b08d-4b72-a197-d9c61299990a/products/85dd03743c6db53cee73.webp) | — | `7d424d3a-c3f5-45e9-bddc-7ef1db3b7083` |
 | 47 | Coca-Cola 400ml (pidela original o ZERO ) | Bebidas Frías | $6.000 | _(la fuente no publica descripción)_ | [foto](https://pub-6de3a37544604346a69b9836aed1c6cf.r2.dev/2f275d54-b08d-4b72-a197-d9c61299990a/products/ceb6db1e1752c179066a.webp) | Variantes: Tamaño: COCACOLA ZERO (+$0) | `c0261e8e-473a-4bdf-8c39-d11357d6b7b6` |

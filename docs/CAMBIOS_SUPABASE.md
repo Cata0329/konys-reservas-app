@@ -17,6 +17,7 @@ toca** porque ya está ejecutada.
 | 2 | `supabase/seed_carta_real.sql` | Crea/actualiza las **14 categorías** reales y los **67 productos** reales con precio en COP e `imagen_url` oficial. Marca los 7 platos inventados como `origen = 'prueba'` y los **oculta** (no los borra). Corrige «Limonada de coco» con los datos oficiales. | Que la carta pública muestre solo productos reales verificados en el menú oficial (soyclubify.com/d/konys). |
 | 3 | `supabase/migrations/003_consulta_reservas.sql` | Crea dos funciones: `consultar_reserva(codigo, nombre)` y `cancelar_reserva(codigo, nombre)`. | Página pública «Mi reserva»: el cliente consulta o cancela su reserva con el código de 8 caracteres **y** su nombre. Nunca devuelve el teléfono. |
 | 4 | `supabase/migrations/004_horarios_reales.sql` | Deja **todos los días** con dos jornadas: almuerzo 12:30–14:30 y noche 17:00–23:00. | El documento del proyecto dice 12:30–2:30 p. m. y 5:00–11:00 p. m. El horario actual (lunes cerrado, martes solo noche) venía del diseño de Figma, no del restaurante. Decisión del equipo del 7 de noviembre de 2026. |
+| 5 | `supabase/migrations/005_fotos_sodas.sql` | Pone la foto oficial a «SODA ARANDANOS» y «SODA MARACUYÁ» (solo si siguen sin foto). | La carta oficial usa la misma foto para las dos; la primera versión de la carta las dejó sin imagen. Decisión del equipo del 8 de noviembre de 2026. |
 
 **Decisiones sobre la estructura de la carta** (aprobadas por el equipo):
 
@@ -81,7 +82,20 @@ from public.horarios order by dia_semana, hora_inicio;
 -- 14 filas: días 1 a 7, cada uno con almuerzo 12:30–14:30 y noche 17:00–23:00, activo = true
 ```
 
-### Paso 5 — comprobar desde la página
+### Paso 5 — `005_fotos_sodas.sql` (nuevo, 8 nov 2026)
+
+> **Tatis: si ya ejecutaste los pasos 1 a 4, solo te falta este.** No hace falta repetir los anteriores.
+
+Pega el archivo completo y pulsa **Run**. Comprobación:
+
+```sql
+select nombre, imagen_url is not null as tiene_foto from public.platos
+where nombre in ('SODA ARANDANOS', 'SODA MARACUYÁ');
+-- las dos filas con tiene_foto = true
+select count(*) from public.platos where origen = 'oficial' and imagen_url is null;   -- 0
+```
+
+### Paso 6 — comprobar desde la página
 
 1. Abre <https://konys-reservas-app.vercel.app/carta.html> (después del nuevo despliegue): deben verse 15 pestañas
    empezando por «Recomendados» y fotos reales.
@@ -102,7 +116,14 @@ from public.horarios order by dia_semana, hora_inicio;
 
 ## 4. Cómo revertir
 
-Cada paso se puede deshacer por separado. Ejecuta solo lo que necesites, en orden inverso (4 → 3 → 2 → 1).
+Cada paso se puede deshacer por separado. Ejecuta solo lo que necesites, en orden inverso (5 → 4 → 3 → 2 → 1).
+
+**Revertir paso 5 (fotos de sodas):**
+
+```sql
+update public.platos set imagen_url = null
+where id_externo in ('0d5c856e-b81e-4338-9e04-f2b26e27ea37', '85d83346-4aa9-4195-8068-3e0d5c638076');
+```
 
 **Revertir paso 4 (horarios)** — vuelve al horario anterior (lunes cerrado, martes solo noche):
 
@@ -147,5 +168,5 @@ alter table public.platos alter column precio set not null;
 
 Los cuatro archivos se ejecutaron en un PostgreSQL real (PGlite) partiendo **del mismo estado que tiene hoy tu base**
 (seed original con los 8 platos inventados y el horario antiguo), dos veces seguidas para comprobar que no duplican nada:
-`npm test` → 48 pruebas aprobadas (`tests/sql/esquema.test.mjs`). Además, 37 pruebas Selenium recorrieron la aplicación
+`npm test` → 49 pruebas aprobadas (`tests/sql/esquema.test.mjs`). Además, 37 pruebas Selenium recorrieron la aplicación
 sobre esa copia.

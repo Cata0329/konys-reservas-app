@@ -400,17 +400,37 @@ em.acento, .acento { font-style: italic; color: var(--acento-texto); }
    Carta
    ===================================================================== */
 .carta { background: var(--arena); border-top: 1px solid var(--carbon); border-bottom: 1px solid var(--carbon); }
+/* Barra de categorías: una sola fila desplazable, fija bajo el encabezado al bajar */
+.carta-nav {
+  position: sticky; top: 84px; z-index: 20; display: flex; align-items: center; gap: 6px;
+  margin: 0 0 32px; padding: 8px; background: var(--crema); border: 1.5px solid var(--carbon);
+  border-radius: 20px; box-shadow: 0 6px 18px rgba(37, 40, 36, .08);
+}
 .pestanas {
-  display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 5px; border: 1.5px solid var(--carbon); border-radius: var(--r-pildora);
-  background: var(--crema); margin-bottom: 36px;
+  flex: 1; min-width: 0; display: flex; gap: 6px; padding: 3px; overflow-x: auto; scroll-behavior: smooth;
+  scrollbar-width: none; overscroll-behavior-x: contain; scroll-snap-type: x proximity;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+          mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
 }
+.pestanas::-webkit-scrollbar { display: none; }
+.carta-nav[data-inicio] .pestanas { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent 100%); mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent 100%); }
+.carta-nav[data-fin] .pestanas { -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18px); mask-image: linear-gradient(to right, transparent 0, #000 18px); }
+.carta-nav[data-inicio][data-fin] .pestanas { -webkit-mask-image: none; mask-image: none; }
 .pestana {
-  border: 0; background: transparent; padding: 12px 22px; border-radius: var(--r-pildora); font-weight: 600; cursor: pointer;
+  flex: none; white-space: nowrap; scroll-snap-align: center; border: 1.5px solid transparent; background: transparent;
+  padding: 10px 18px; border-radius: var(--r-pildora); font-weight: 600; font-size: 15px; cursor: pointer;
+  transition: background-color .15s, border-color .15s;
 }
-.pestana[aria-selected='true'] { background: var(--limon); box-shadow: inset 0 0 0 1.5px var(--carbon); }
+.pestana:hover { background: var(--blanco); border-color: var(--borde-suave); }
+.pestana[aria-selected='true'] { background: var(--limon); border-color: var(--carbon); }
+.carta-nav__flecha {
+  flex: none; width: 40px; height: 40px; border-radius: 50%; border: 1.5px solid var(--carbon); background: var(--blanco);
+  display: grid; place-items: center; cursor: pointer;
+}
+.carta-nav__flecha:disabled { border-color: var(--borde-suave); color: #B7AE9B; cursor: default; }
 .rejilla-platos { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
 .tarjeta-plato { background: var(--blanco); border-radius: var(--r-tarjeta); overflow: hidden; display: flex; flex-direction: column; }
-.tarjeta-plato__arte { position: relative; height: 200px; background: #F4E3C4; display: grid; place-items: center; }
+.tarjeta-plato__arte { position: relative; aspect-ratio: 4 / 3; flex: none; background: #F4E3C4; display: grid; place-items: center; }
 .tarjeta-plato__arte img { width: 100%; height: 100%; object-fit: cover; }
 .tarjeta-plato__arte .sello { position: absolute; left: 14px; top: 14px; }
 .tarjeta-plato__cuerpo { padding: 20px 22px 24px; display: grid; gap: 8px; }
@@ -596,8 +616,9 @@ em.acento, .acento { font-style: italic; color: var(--acento-texto); }
   .pasador li:not([aria-current='step']) .pasador__texto { display: none; }
   .dia { border-radius: 10px; font-size: 15px; }
   .panel__acciones .btn { width: 100%; }
-  .pestanas { display: flex; width: 100%; }
-  .pestana { flex: 1; padding: 12px 10px; }
+  .carta-nav { top: 72px; padding: 6px; border-radius: 16px; }
+  .carta-nav__flecha { display: none; }
+  .pestana { padding: 9px 14px; font-size: 14px; }
 }
 
 /* Detalles del pie de página */
@@ -610,11 +631,6 @@ section[id], [id='contacto'] { scroll-margin-top: 92px; }
 /* =====================================================================
    Carta oficial: muchas categorías, fotos reales, subgrupos y franjas
    ===================================================================== */
-.pestanas {
-  display: flex; flex-wrap: nowrap; max-width: 100%; overflow-x: auto; scrollbar-width: thin;
-  overscroll-behavior-x: contain; scroll-snap-type: x proximity;
-}
-.pestana { flex: none; white-space: nowrap; scroll-snap-align: start; }
 .carta__subtitulo { font-weight: 600; margin: -16px 0 20px; color: var(--etiqueta-texto); }
 .carta__grupo { font-size: 26px; margin: 36px 0 18px; }
 .carta__grupo:first-of-type { margin-top: 8px; }

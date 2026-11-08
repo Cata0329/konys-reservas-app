@@ -67,6 +67,7 @@ await db.exec(await sql('supabase/migrations/002_carta_real.sql'));
 await db.exec(await sql('supabase/seed_carta_real.sql'));
 await db.exec(await sql('supabase/migrations/003_consulta_reservas.sql'));
 await db.exec(await sql('supabase/migrations/004_horarios_reales.sql'));
+await db.exec(await sql('supabase/migrations/005_fotos_sodas.sql'));
 for (const [email, u] of Object.entries(USUARIOS)) {
   await db.query('insert into auth.users values ($1, $2)', [u.id, email]);
   if (u.admin) await db.query('insert into public.administradores (user_id, nombre) values ($1, $2)', [u.id, 'Admin pruebas']);
@@ -241,7 +242,7 @@ async function rest(req, url, cuerpo) {
   const sel = columnas(url.searchParams.get('select'));
   let r;
   let total = null;
-  if (req.method === 'GET') {
+  if (req.method === 'GET' || req.method === 'HEAD') { // HEAD = solo el conteo (count con head: true)
     const where = filtros(params, valores);
     const orden = url.searchParams.get('order');
     const order = orden ? `order by ${orden.split(',').map((o) => { const [c, d] = o.split('.'); return `t.${ident(c)} ${d === 'desc' ? 'desc' : 'asc'}`; }).join(', ')}` : '';
@@ -286,7 +287,7 @@ createServer(async (req, res) => {
   const cors = {
     'Access-Control-Allow-Origin': req.headers.origin ?? '*',
     'Access-Control-Allow-Headers': req.headers['access-control-request-headers'] ?? 'authorization, apikey, content-type',
-    'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
+    'Access-Control-Allow-Methods': 'GET,HEAD,POST,PATCH,DELETE,OPTIONS',
     'Access-Control-Expose-Headers': 'Content-Range',
     Vary: 'Origin',
   };
@@ -320,5 +321,5 @@ createServer(async (req, res) => {
   }
   if (process.env.SUPABASE_PRUEBA_LOG) console.log(req.method, url.pathname, '→', r.estado);
   res.writeHead(r.estado, { ...cors, ...(r.datos === null ? {} : { 'Content-Type': 'application/json' }), ...(r.cabeceras ?? {}) });
-  res.end(r.datos === null ? '' : JSON.stringify(r.datos));
+  res.end(r.datos === null || req.method === 'HEAD' ? '' : JSON.stringify(r.datos));
 }).listen(PUERTO, () => console.log(`Supabase local de pruebas en http://localhost:${PUERTO}`));
