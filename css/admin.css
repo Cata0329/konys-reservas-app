@@ -169,3 +169,16 @@ body.admin { background: var(--crema-panel); background-image: none; }
 
 .celda-descripcion { min-width: 240px; }
 .celda-plato .fuerte { min-width: 130px; }
+
+/* Carta y categorías */
+.filtros--carta { grid-template-columns: 2fr 1fr 1fr; }
+.contador-filas { margin: 0 0 10px; font-size: 14px; }
+.celda-precio { white-space: nowrap; }
+.campo--grupo { border: 0; padding: 0; margin: 0; }
+.campo--grupo legend { padding: 0; margin-bottom: 8px; }
+.fila-campos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+#aviso-prueba .alerta { margin-bottom: 16px; }
+.tabla code { font-size: 13px; }
+@media (max-width: 860px) {
+  .filtros--carta { grid-template-columns: 1fr; }
+}

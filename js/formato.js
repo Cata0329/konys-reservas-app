@@ -81,8 +81,9 @@ export function formatoFechaTabla(texto) {
 
 export const capitalizar = (t) => (t ? t[0].toUpperCase() + t.slice(1) : t);
 
-/** 39900 -> '$39.900' */
+/** 39900 -> '$39.900'. Sin precio publicado (null) -> 'Precio por confirmar'. */
 export function formatoPrecio(valor) {
+  if (valor === null || valor === undefined || valor === '') return 'Precio por confirmar';
   return '$' + Math.round(Number(valor)).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 

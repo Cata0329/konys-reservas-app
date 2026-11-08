@@ -103,5 +103,6 @@ test('validación de mesas, horarios y platos del panel', () => {
   assert.ok(validarHorario({ hora_inicio: '12:00', hora_fin: '12:30', duracion_min: 60 }).hora_fin);
   assert.ok(!tieneErrores(validarPlato({ nombre: 'Tiramisú', categoria_id: 'postres', precio: '17900' })));
   assert.ok(validarPlato({ nombre: 'Tiramisú', categoria_id: 'postres', precio: '17.900,50' }).precio);
-  assert.ok(validarPlato({ nombre: 'Tiramisú', categoria_id: 'postres', precio: '' }).precio);
+  // Precio vacío = "precio por confirmar" (p. ej. CONO CONGELADO en el menú oficial).
+  assert.equal(validarPlato({ nombre: 'CONO CONGELADO', categoria_id: 'congelados', precio: '' }).precio, undefined);
 });

@@ -49,6 +49,8 @@ const TRAZOS = {
   imagen: '<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.8"/><path d="M20.5 16l-5-5-8 8"/>',
   reintentar: '<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5v4.5H15"/>',
   menu: '<path d="M5 8h14M5 12h14M5 16h14"/>',
+  etiqueta: '<path d="M3.5 12.5V4.5h8l9 9-8 8-9-9z"/><circle cx="8" cy="9" r="1.4"/>',
+  buscar: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
 };
 
 export function icono(nombre, clase = '') {
@@ -70,6 +72,9 @@ const ETIQUETAS = {
   inactiva: ['neutra', 'menos', 'Inactiva'],
   inactivo: ['neutra', 'menos', 'Inactivo'],
   oculto: ['neutra', 'ojoTachado', 'Oculto'],
+  oficial: ['exito', 'check', 'Oficial'],
+  prueba: ['error', 'aviso', 'Dato de prueba'],
+  manual: ['info', 'lapiz', 'Manual'],
   'sin-atencion': ['neutra', 'menos', 'Sin atención'],
 };
 

@@ -543,7 +543,7 @@ function mostrarConfirmacion(r) {
     mesa, fecha: r.fecha, hora: r.hora_inicio.slice(0, 5), personas: r.num_personas, duracion, cambiar: false,
     extra: `<div><dt>${icono('persona')}A nombre de</dt><dd>${esc(r.cliente_nombre)}</dd></div>`,
   })}
-    <p class="codigo">Código de reserva: ${esc(String(r.id).slice(0, 8).toUpperCase())}</p>
+    <p class="codigo">Código de reserva: <strong>${esc(String(r.id).slice(0, 8).toUpperCase())}</strong>. Guárdalo: con él y tu nombre puedes consultar o cancelar tu reserva en <a href="mi-reserva.html?codigo=${esc(String(r.id).slice(0, 8))}">Mi reserva</a>.</p>
     <div class="confirmacion__acciones">
       <a class="btn btn--primario" href="index.html">Volver al inicio</a>
       <a class="btn btn--secundario" href="reservar.html">Hacer otra reserva</a>

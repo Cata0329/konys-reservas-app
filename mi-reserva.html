@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mi reserva · Konys Pizza</title>
+  <meta name="description" content="Consulta el estado de tu reserva en Konys Pizza con tu código y tu nombre.">
+  <meta name="theme-color" content="#173F35">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23173F35'/%3E%3Ctext x='16' y='23' font-family='Georgia' font-style='italic' font-weight='700' font-size='20' fill='%23E9D56B' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,700;1,9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script type="module" src="js/mi-reserva.js"></script>
+</head>
+<body>
+  <a class="saltar" href="#contenido">Saltar al contenido</a>
+  <div id="aviso-config"></div>
+
+  <main class="contenedor" id="contenido">
+    <header class="reserva-cabecera">
+      <a href="index.html" class="logo" aria-label="Konys Pizza, volver al inicio"><span class="logo__marca">Konys</span><span class="logo__sello">PIZZA</span></a>
+      <a href="index.html" class="enlace-volver" id="volver-sitio">Volver al sitio</a>
+    </header>
+
+    <div class="reserva-titulo">
+      <h1>Mi reserva</h1>
+      <p>Consulta el estado con tu código y tu nombre</p>
+    </div>
+
+    <div class="reserva-grid">
+      <section class="panel" aria-labelledby="titulo-consulta">
+        <h2 id="titulo-consulta">Busca tu reserva</h2>
+        <p class="entradilla-panel">El código de 8 caracteres aparece en la confirmación. Escribe el nombre tal como lo diste al reservar.</p>
+        <div id="consulta-alerta" aria-live="polite"></div>
+        <form class="formulario" id="form-consulta" novalidate>
+          <div class="campo">
+            <label for="codigo">Código de reserva *</label>
+            <input class="entrada entrada--codigo" id="codigo" name="codigo" maxlength="8" autocomplete="off" autocapitalize="characters" spellcheck="false" required placeholder="Ej.: 8331F480">
+          </div>
+          <div class="campo">
+            <label for="nombre">Nombre completo *</label>
+            <input class="entrada" id="nombre" name="nombre" maxlength="80" autocomplete="name" required placeholder="Ej.: Laura Gómez">
+          </div>
+          <div class="panel__acciones">
+            <a class="btn btn--secundario" href="reservar.html">Hacer una reserva</a>
+            <button type="submit" class="btn btn--primario" id="btn-consultar">Consultar</button>
+          </div>
+        </form>
+      </section>
+      <aside id="resultado" aria-live="polite"></aside>
+    </div>
+  </main>
+</body>
+</html>

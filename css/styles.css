@@ -606,3 +606,35 @@ em.acento, .acento { font-style: italic; color: var(--acento-texto); }
 .pie__subtitulo { margin-top: 24px; }
 .confirmacion > .alerta { text-align: left; margin-bottom: 20px; }
 section[id], [id='contacto'] { scroll-margin-top: 92px; }
+
+/* =====================================================================
+   Carta oficial: muchas categorías, fotos reales, subgrupos y franjas
+   ===================================================================== */
+.pestanas {
+  display: flex; flex-wrap: nowrap; max-width: 100%; overflow-x: auto; scrollbar-width: thin;
+  overscroll-behavior-x: contain; scroll-snap-type: x proximity;
+}
+.pestana { flex: none; white-space: nowrap; scroll-snap-align: start; }
+.carta__subtitulo { font-weight: 600; margin: -16px 0 20px; color: var(--etiqueta-texto); }
+.carta__grupo { font-size: 26px; margin: 36px 0 18px; }
+.carta__grupo:first-of-type { margin-top: 8px; }
+#carta-lista > .alerta { margin-bottom: 20px; max-width: 640px; }
+.tarjeta-plato__arte--foto { background: #EFE2C9; }
+.tarjeta-plato__arte img { width: 100%; height: 100%; object-fit: cover; }
+.tarjeta-plato__sellos { position: absolute; left: 14px; top: 14px; right: 14px; display: flex; flex-wrap: wrap; gap: 6px; }
+.tarjeta-plato__sellos .sello { position: static; }
+.tarjeta-plato__sin-foto {
+  position: absolute; right: 10px; bottom: 10px; font-size: 12px; background: rgba(255, 255, 255, .85);
+  padding: 2px 8px; border-radius: var(--r-pildora); color: var(--texto-suave);
+}
+.tarjeta-plato__descripcion { white-space: pre-line; }
+.tarjeta-plato__opciones { font-size: 14px; font-weight: 600; color: var(--carbon) !important; }
+.tarjeta-plato h3 { overflow-wrap: anywhere; }
+
+/* Mi reserva */
+.entrada--codigo { font-family: ui-monospace, Consolas, monospace; letter-spacing: .18em; text-transform: uppercase; max-width: 240px; }
+.codigo a { color: var(--verde); font-weight: 600; }
+.tarjeta-plato__arte { overflow: hidden; }
+.tarjeta-plato__arte--foto img { position: absolute; inset: 0; }
+.tarjeta-plato__titulo { flex-wrap: wrap; row-gap: 4px; }
+.tarjeta-plato__titulo h3 { flex: 1 1 60%; font-size: 20px; }

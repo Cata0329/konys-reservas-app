@@ -48,14 +48,27 @@ export function validarHorario({ hora_inicio, hora_fin, duracion_min }) {
   return errores;
 }
 
-export function validarPlato({ nombre, categoria_id, precio, descripcion }) {
+export function validarPlato({ nombre, categoria_id, precio, descripcion, subcategoria }) {
   const errores = {};
   if (!limpiar(nombre)) errores.nombre = 'Escribe el nombre del plato.';
   else if (limpiar(nombre).length > 80) errores.nombre = 'Máximo 80 caracteres.';
   if (!categoria_id) errores.categoria_id = 'Elige una categoría.';
+  // El precio es opcional (vacío = "precio por confirmar"), pero si se escribe debe ser válido.
   const p = Number(precio);
-  if (precio === '' || precio === null || !Number.isInteger(p) || p < 0) errores.precio = 'Escribe un precio válido en pesos, sin puntos ni decimales.';
-  if (limpiar(descripcion).length > 300) errores.descripcion = 'Máximo 300 caracteres.';
+  if (limpiar(precio) !== '' && (!Number.isInteger(p) || p < 0)) errores.precio = 'Escribe un precio válido en pesos, sin puntos ni decimales.';
+  if (limpiar(descripcion).length > 600) errores.descripcion = 'Máximo 600 caracteres.';
+  if (limpiar(subcategoria).length > 60) errores.subcategoria = 'Máximo 60 caracteres.';
+  return errores;
+}
+
+export function validarCategoria({ id, nombre, orden, disponible_desde, disponible_hasta }, esNueva) {
+  const errores = {};
+  if (esNueva && !/^[a-z_]{2,40}$/.test(limpiar(id))) errores.id = 'Usa solo minúsculas sin tildes y guion bajo (ej.: menu_infantil).';
+  if (!limpiar(nombre)) errores.nombre = 'Escribe el nombre de la categoría.';
+  else if (limpiar(nombre).length > 60) errores.nombre = 'Máximo 60 caracteres.';
+  if (limpiar(orden) !== '' && !Number.isInteger(Number(orden))) errores.orden = 'El orden debe ser un número entero.';
+  if (Boolean(disponible_desde) !== Boolean(disponible_hasta)) errores.disponible_hasta = 'Indica las dos horas de la franja o ninguna.';
+  else if (disponible_desde && aMinutos(disponible_hasta) <= aMinutos(disponible_desde)) errores.disponible_hasta = 'La hora final debe ser posterior a la inicial.';
   return errores;
 }
 

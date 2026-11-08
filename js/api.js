@@ -15,6 +15,8 @@ const MENSAJES = {
   NOMBRE_INVALIDO: 'Escribe tu nombre completo (mínimo 3 letras).',
   CONTACTO_INVALIDO: 'El contacto no puede superar 40 caracteres.',
   PERSONAS_INVALIDAS: 'Indica cuántas personas vienen.',
+  DATOS_CONSULTA_INVALIDOS: 'Revisa el código (8 caracteres) y el nombre con que reservaste.',
+  RESERVA_NO_CANCELABLE: 'Esta reserva ya no se puede cancelar (ya pasó, ya estaba cancelada o los datos no coinciden).',
 };
 
 export class ErrorApi extends Error {
@@ -38,6 +40,13 @@ function traducirError(error) {
   }
   if (error?.code === '23P01') return new ErrorApi('Ese cambio choca con otra reserva de la misma mesa.', 'HORARIO_OCUPADO', error);
   if (error?.code === '23514') return new ErrorApi('Algún dato no cumple las reglas (revisa horas, duración o capacidad).', 'INVALIDO', error);
+  if (/^PGRST30/.test(error?.code ?? '') || /jwt|JWSError|token is expired|invalid claim/i.test(texto)) {
+    return new ErrorApi('Tu sesión ya no es válida. Ingresa de nuevo.', 'SESION_INVALIDA', error);
+  }
+  // update/delete de una fila que RLS oculta: PostgREST responde "0 filas".
+  if (error?.code === 'PGRST116') {
+    return new ErrorApi('No se encontró el registro o tu cuenta no tiene permisos para modificarlo.', 'SIN_PERMISO', error);
+  }
   if (error?.code === '42501' || /row-level security|permission denied/i.test(texto)) {
     return new ErrorApi('Tu cuenta no tiene permisos para esta acción.', 'SIN_PERMISO', error);
   }
@@ -59,7 +68,16 @@ async function ejecutar(construir) {
   } catch (e) {
     throw traducirError(e);
   }
-  if (respuesta.error) throw traducirError(respuesta.error);
+  if (respuesta.error) {
+    const error = traducirError(respuesta.error);
+    // Token vencido, manipulado o revocado, o petición que llegó SIN sesión
+    // ("permission denied" solo lo recibe el rol anónimo): el panel debe cerrar
+    // la sesión en vez de seguir mostrándose. En el sitio público nadie escucha
+    // este evento, así que no tiene efecto.
+    const sinSesion = error.codigo === 'SESION_INVALIDA' || respuesta.error.code === '42501';
+    if (sinSesion) window.dispatchEvent(new CustomEvent('konys:sesion-invalida'));
+    throw error;
+  }
   return respuesta;
 }
 
@@ -76,11 +94,11 @@ export const obtenerHorarios = () => datos((db) =>
     .order('dia_semana').order('hora_inicio'));
 
 export const obtenerCategorias = () => datos((db) =>
-  db.from('categorias').select('id, nombre, orden').order('orden'));
+  db.from('categorias').select('id, nombre, orden, subtitulo, disponible_desde, disponible_hasta').order('orden'));
 
 /** Para el público, RLS ya filtra los platos no disponibles; se filtra también aquí por claridad. */
 export const obtenerCartaPublica = () => datos((db) =>
-  db.from('platos').select('id, nombre, categoria_id, descripcion, precio, imagen_url, etiqueta')
+  db.from('platos').select('id, nombre, categoria_id, subcategoria, descripcion, precio, imagen_url, etiqueta, etiquetas, variantes, recomendado')
     .eq('disponible', true).order('orden').order('id'));
 
 /** Franjas ocupadas (sin datos personales) entre dos fechas. */
@@ -103,6 +121,15 @@ export async function crearReserva({ mesaId, fecha, hora, nombre, personas, cont
   return { ...filas[0], fecha: String(filas[0].fecha).slice(0, 10) };
 }
 
+/** Consulta una reserva con el código de 8 caracteres y el nombre del cliente. */
+export async function consultarReserva(codigo, nombre) {
+  const filas = await datos((db) => db.rpc('consultar_reserva', { p_codigo: codigo.trim(), p_nombre: nombre.trim() }));
+  return filas[0] ? { ...filas[0], fecha: String(filas[0].fecha).slice(0, 10) } : null;
+}
+
+export const cancelarReserva = (codigo, nombre) => datos((db) =>
+  db.rpc('cancelar_reserva', { p_codigo: codigo.trim(), p_nombre: nombre.trim() }));
+
 // ---------------------------------------------------------------------
 // Autenticación del panel
 // ---------------------------------------------------------------------
@@ -123,14 +150,39 @@ export async function iniciarSesion(email, password) {
   return respuesta.data.session;
 }
 
+/**
+ * Cierra la sesión: revoca los tokens de actualización en Supabase Auth
+ * (scope global) y borra la sesión guardada en el navegador. Si el servidor
+ * no responde, igualmente se borra la sesión local.
+ */
 export async function cerrarSesion() {
-  if (supabase) await supabase.auth.signOut();
+  if (!supabase) return;
+  const { error } = await supabase.auth.signOut({ scope: 'global' });
+  if (error) await supabase.auth.signOut({ scope: 'local' });
 }
 
-export async function sesionActual() {
+/**
+ * Devuelve el usuario SOLO si su token es válido en el servidor de
+ * Supabase Auth (getUser consulta al servidor; getSession solo lee el
+ * almacenamiento local y aceptaría un token manipulado o revocado).
+ * Si el token no es válido, se borra la sesión local.
+ */
+export async function usuarioVerificado() {
   if (!supabase) return null;
-  const { data } = await supabase.auth.getSession();
-  return data.session;
+  const { data: local } = await supabase.auth.getSession();
+  if (!local.session) return null;
+  let respuesta;
+  try {
+    respuesta = await supabase.auth.getUser();
+  } catch (e) {
+    throw traducirError(e);
+  }
+  if (respuesta.error || !respuesta.data?.user) {
+    if (respuesta.error && /fetch|network|Failed|abort/i.test(respuesta.error.message)) throw traducirError(respuesta.error);
+    await supabase.auth.signOut({ scope: 'local' });
+    return null;
+  }
+  return respuesta.data.user;
 }
 
 /** true si el usuario autenticado figura en la tabla administradores. */
@@ -207,13 +259,15 @@ export const eliminarHorario = (id) => datos((db) => db.from('horarios').delete(
 // Panel: carta
 // ---------------------------------------------------------------------
 export const obtenerTodosLosPlatos = () => datos((db) =>
-  db.from('platos').select('id, nombre, categoria_id, descripcion, precio, imagen_url, etiqueta, disponible, orden')
+  db.from('platos').select('id, nombre, categoria_id, subcategoria, descripcion, precio, imagen_url, etiqueta, etiquetas, variantes, recomendado, disponible, orden, origen')
     .order('categoria_id').order('orden').order('id'));
 
 export const guardarPlato = (p) => datos((db) => {
   const valores = {
-    nombre: p.nombre.trim(), categoria_id: p.categoria_id, descripcion: p.descripcion?.trim() || null,
-    precio: Number(p.precio), etiqueta: p.etiqueta || null, disponible: p.disponible,
+    nombre: p.nombre.trim(), categoria_id: p.categoria_id, subcategoria: p.subcategoria?.trim() || null,
+    descripcion: p.descripcion?.trim() || null,
+    precio: p.precio === '' || p.precio === null || p.precio === undefined ? null : Number(p.precio),
+    etiqueta: p.etiqueta || null, disponible: p.disponible, recomendado: Boolean(p.recomendado),
     imagen_url: p.imagen_url || null,
   };
   return p.id
@@ -225,6 +279,21 @@ export const cambiarDisponibilidadPlato = (id, disponible) => datos((db) =>
   db.from('platos').update({ disponible }).eq('id', id).select().single());
 
 export const eliminarPlato = (id) => datos((db) => db.from('platos').delete().eq('id', id).select('id'));
+
+// ---------------------------------------------------------------------
+// Panel: categorías
+// ---------------------------------------------------------------------
+export const guardarCategoria = (c, esNueva) => datos((db) => {
+  const valores = {
+    nombre: c.nombre.trim(), orden: Number(c.orden) || 0, subtitulo: c.subtitulo?.trim() || null,
+    disponible_desde: c.disponible_desde || null, disponible_hasta: c.disponible_hasta || null,
+  };
+  return esNueva
+    ? db.from('categorias').insert({ id: c.id, ...valores }).select().single()
+    : db.from('categorias').update(valores).eq('id', c.id).select().single();
+});
+
+export const eliminarCategoria = (id) => datos((db) => db.from('categorias').delete().eq('id', id).select('id'));
 
 // ---------------------------------------------------------------------
 // Panel: imágenes (bucket público 'imagenes'; solo el admin puede subir)

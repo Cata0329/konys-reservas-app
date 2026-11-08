@@ -2,7 +2,7 @@
 import * as api from './api.js';
 import { config, errorConfiguracion } from './supabase.js';
 import {
-  ahoraBogota, formatoHora, formatoFechaCorta, formatoFechaLarga, formatoPrecio,
+  ahoraBogota, aMinutos, formatoHora, formatoFechaCorta, formatoFechaLarga, formatoPrecio,
   nombreZona, nombreDiaIso, capitalizar,
 } from './formato.js';
 import { mesaLibreA, proximasFechasAbiertas, horasDelDia, jornadasDelDia } from './disponibilidad.js';
@@ -22,7 +22,7 @@ const estado = {
   hora: null,
   zona: '',
   personas: 0,
-  categoria: 'pizzas',
+  categoria: null,
 };
 
 // ---------------------------------------------------------------------
@@ -289,14 +289,18 @@ function pintarHorariosPie() {
 }
 
 // ---------------------------------------------------------------------
-// Carta digital
+// Carta digital (catálogo oficial de Konys leído desde Supabase)
 // ---------------------------------------------------------------------
+const RECOMENDADOS = { id: 'recomendados', nombre: 'Recomendados', subtitulo: 'Lo más pedido por nuestros clientes.' };
+
 async function cargarCarta() {
   try {
     const [categorias, platos] = await Promise.all([api.obtenerCategorias(), api.obtenerCartaPublica()]);
-    estado.categorias = categorias;
     estado.platos = platos;
-    estado.categoria = categorias[0]?.id ?? 'pizzas';
+    // Solo se muestran pestañas con platos visibles; "Recomendados" agrupa los marcados por Konys.
+    const conPlatos = categorias.filter((c) => platos.some((p) => p.categoria_id === c.id));
+    estado.categorias = platos.some((p) => p.recomendado) ? [RECOMENDADOS, ...conPlatos] : conPlatos;
+    estado.categoria = estado.categorias[0]?.id ?? null;
     pintarPestanas();
     pintarCarta();
   } catch (e) {
@@ -309,8 +313,10 @@ async function cargarCarta() {
 function pintarPestanas() {
   const cont = $('#pestanas');
   cont.innerHTML = estado.categorias.map((c) =>
-    `<button class="pestana" role="tab" id="tab-${esc(c.id)}" aria-controls="carta-lista" data-categoria="${esc(c.id)}"
+    `<button class="pestana" type="button" role="tab" id="tab-${esc(c.id)}" aria-controls="carta-lista" data-categoria="${esc(c.id)}"
       aria-selected="${c.id === estado.categoria}" tabindex="${c.id === estado.categoria ? 0 : -1}">${esc(c.nombre)}</button>`).join('');
+  if (cont.dataset.listo) return; // al reintentar no se duplican los oyentes
+  cont.dataset.listo = '1';
   cont.addEventListener('click', (e) => {
     const b = e.target.closest('[data-categoria]');
     if (b) seleccionarCategoria(b.dataset.categoria);
@@ -336,24 +342,65 @@ function seleccionarCategoria(id) {
     const activa = b.dataset.categoria === id;
     b.setAttribute('aria-selected', String(activa));
     b.tabIndex = activa ? 0 : -1;
+    if (activa) b.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   });
   pintarCarta();
 }
 
-function pintarCarta() {
-  const panel = $('#carta-lista');
-  panel.setAttribute('aria-labelledby', `tab-${estado.categoria}`);
-  const platos = estado.platos.filter((p) => p.categoria_id === estado.categoria);
-  if (!platos.length) {
-    panel.innerHTML = estadoVacio({ titulo: 'Pronto habrá platos aquí', texto: 'Estamos preparando esta sección de la carta.', icono: 'carta' });
-    return;
-  }
-  panel.innerHTML = `<div class="rejilla-platos">${platos.map((p, i) => `
+/** Aviso de franja horaria (p. ej. Menú Almuerzos: de 12:00 a 2:30 p. m.). */
+function avisoFranja(c) {
+  if (!c.disponible_desde) return '';
+  const ahora = ahoraBogota().minutos;
+  const [desde, hasta] = [c.disponible_desde, c.disponible_hasta].map(aMinutos);
+  const abierto = ahora >= desde && ahora < hasta;
+  const rango = `${formatoHora(c.disponible_desde)} a ${formatoHora(c.disponible_hasta)}`;
+  return alerta(abierto ? 'exito' : 'info', abierto ? 'Disponible ahora.' : 'Fuera de horario.',
+    `Esta sección se sirve solo de ${rango}.`);
+}
+
+function tarjetaPlato(p) {
+  const etiquetas = (p.etiquetas ?? []).map((t) => `<span class="sello sello--rosa">${esc(t)}</span>`).join('') || etiquetaPlato(p.etiqueta);
+  const opciones = Array.isArray(p.variantes) && p.variantes.length
+    ? `<p class="tarjeta-plato__opciones">Opciones: ${p.variantes.map((v) => esc(v.nombre)).join(', ')}</p>` : '';
+  // Foto oficial si existe; si no, una ilustración rotulada como tal (no se hace pasar por foto).
+  const arte = p.imagen_url
+    ? `<img src="${esc(p.imagen_url)}" alt="Foto de ${esc(p.nombre)}" loading="lazy" decoding="async" width="640" height="400">`
+    : `${ilustracionPlato(p)}<span class="tarjeta-plato__sin-foto">Ilustración · sin foto oficial</span>`;
+  return `
     <article class="tarjeta-plato">
-      <div class="tarjeta-plato__arte">${imagenOIlustracion(p.imagen_url, ilustracionPlato(p, i), p.nombre)}${etiquetaPlato(p.etiqueta)}</div>
+      <div class="tarjeta-plato__arte ${p.imagen_url ? 'tarjeta-plato__arte--foto' : ''}">${arte}
+        ${etiquetas ? `<div class="tarjeta-plato__sellos">${etiquetas}</div>` : ''}</div>
       <div class="tarjeta-plato__cuerpo">
         <div class="tarjeta-plato__titulo"><h3>${esc(p.nombre)}</h3><span class="tarjeta-plato__precio">${formatoPrecio(p.precio)}</span></div>
-        ${p.descripcion ? `<p>${esc(p.descripcion)}</p>` : ''}
+        ${p.descripcion ? `<p class="tarjeta-plato__descripcion">${esc(p.descripcion)}</p>` : ''}
+        ${opciones}
       </div>
-    </article>`).join('')}</div>`;
+    </article>`;
+}
+
+function pintarCarta() {
+  const panel = $('#carta-lista');
+  const categoria = estado.categorias.find((c) => c.id === estado.categoria);
+  if (!categoria) {
+    panel.innerHTML = estadoVacio({ titulo: 'La carta se está actualizando', texto: 'Vuelve pronto para ver nuestros platos.', icono: 'carta' });
+    return;
+  }
+  panel.setAttribute('aria-labelledby', `tab-${categoria.id}`);
+  const platos = categoria.id === RECOMENDADOS.id
+    ? estado.platos.filter((p) => p.recomendado)
+    : estado.platos.filter((p) => p.categoria_id === categoria.id);
+  // Agrupar por subcategoría (p. ej. Pizzas › Konys clásicas) en el orden en que aparecen.
+  const grupos = [];
+  platos.forEach((p) => {
+    const nombre = categoria.id === RECOMENDADOS.id ? null : (p.subcategoria ?? null);
+    let g = grupos.find((x) => x.nombre === nombre);
+    if (!g) grupos.push(g = { nombre, platos: [] });
+    g.platos.push(p);
+  });
+  panel.innerHTML = `
+    ${categoria.subtitulo ? `<p class="carta__subtitulo">${esc(categoria.subtitulo)}</p>` : ''}
+    ${avisoFranja(categoria)}
+    ${grupos.map((g) => `
+      ${g.nombre ? `<h3 class="carta__grupo">${esc(g.nombre)}</h3>` : ''}
+      <div class="rejilla-platos">${g.platos.map(tarjetaPlato).join('')}</div>`).join('')}`;
 }
