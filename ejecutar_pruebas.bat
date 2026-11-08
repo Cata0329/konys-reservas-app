@@ -1,18 +1,23 @@
 @echo off
 REM ==============================================================
-REM  ejecutar_pruebas.bat - Pruebas automaticas con Selenium
+REM  ejecutar_pruebas.bat - Pruebas automaticas con Selenium (Konys Pizza)
 REM
 REM  Que hace:
 REM   1. Busca Python e instala Selenium y ReportLab si faltan.
-REM   2. Abre Chrome y ejecuta las pruebas del formulario A LA VISTA
+REM   2. Abre Chrome y ejecuta las pruebas del sitio y del panel A LA VISTA
 REM      (se ve como escribe en cada campo y el resultado de cada prueba).
+REM      Base de datos: la real si existe .env (o --real); si no, una copia local.
+REM      Pruebas del panel: definir antes ADMIN_EMAIL_PRUEBAS y ADMIN_PASSWORD_PRUEBAS
+REM        set ADMIN_EMAIL_PRUEBAS=correo@ejemplo.com
+REM        set ADMIN_PASSWORD_PRUEBAS=********
 REM   3. Genera un reporte PDF en pruebas\reportes y lo abre.
 REM
 REM  Opciones (escribirlas despues del nombre del .bat en una consola):
 REM    ejecutar_pruebas.bat --rapido    sin pausas
 REM    ejecutar_pruebas.bat --oculto    sin mostrar el navegador
+REM    ejecutar_pruebas.bat --local     usar la copia local (no toca Supabase)
 REM ==============================================================
-title Pruebas automaticas - Formulario de reservas
+title Pruebas automaticas - Konys Pizza
 cd /d "%~dp0"
 set PYTHONUTF8=1
 

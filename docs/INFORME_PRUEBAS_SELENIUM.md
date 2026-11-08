@@ -2,98 +2,109 @@
 
 ## 1. Punto de partida
 
-El `git pull` trajo `pruebas/pruebas_formulario.py`, `ejecutar_pruebas.bat` y un reporte PDF (aporte de Tatiana-ER).
-Al revisarlos se comprobó que **prueban otra aplicación** («Restaurante El Fogón Dorado»): buscan campos como
-`identificacion`, `correo`, `fechaNacimiento`, radios `tipo` y un modal `#modal` que no existen en Konys. Por eso
-sus 30 capturas son idénticas (la misma página sin los elementos esperados). Esos archivos **se conservaron sin
-modificar** y se reutilizó su instalación (`pruebas/requirements.txt`: Selenium + ReportLab). La suite real del
-proyecto está en `tests/selenium/`.
+`pruebas/pruebas_formulario.py`, `pruebas/reporte_pdf.py` y `ejecutar_pruebas.bat` llegaron como **copia exacta del
+ejemplo del profesor** ([cacarrascal/EjemploSelenium](https://github.com/cacarrascal/EjemploSelenium)), escrito para otra
+aplicación («Restaurante El Fogón Dorado», con ids como `identificacion` o `formReserva`). Por eso el primer reporte salió
+con todas las pruebas fallidas. Se usaron como **plantilla** y se reescribieron para Konys conservando su estructura y su
+experiencia: servidor local propio, Chrome con Edge de respaldo, opciones `--rapido` / `--oculto` / `--no-abrir`, cartel
+«Prueba N de M», captura por prueba, estados APROBADA / FALLIDA / OMITIDA y reporte PDF con portada, tabla resumen y
+detalle (esperado / obtenido / consola / captura). Se borraron los reportes viejos del Fogón Dorado.
 
-## 2. Cómo se ejecuta
+## 2. Cómo se ejecutan
 
 ```
-npm install
-py -X utf8 tests/selenium/ejecutar.py            # Chrome oculto (o: npm run test:selenium)
-py -X utf8 tests/selenium/ejecutar.py --visible  # ver el navegador
-py -X utf8 tests/selenium/ejecutar.py S03 I01    # solo algunos casos
+py pruebas\pruebas_formulario.py --rapido --oculto     (o ejecutar_pruebas.bat)
 ```
 
-El ejecutor (`tests/selenium/entorno.py`):
+| Variable / opción | Para qué |
+|---|---|
+| `.env` presente (o `--real`) | Prueba contra el **Supabase real** del proyecto. |
+| `--local` (o sin `.env`) | Usa una copia local con las mismas migraciones (`tests/soporte/supabase-local.mjs`); no toca la base real. |
+| `ADMIN_EMAIL_PRUEBAS`, `ADMIN_PASSWORD_PRUEBAS` | Credenciales del panel para las pruebas de administración y para **limpiar** los datos de prueba. Solo variables de entorno: nunca en el código. Sin ellas, esas pruebas salen **OMITIDAS**. En modo local se generan solas (contraseña aleatoria por ejecución). |
 
-1. Genera `js/config.js` en **modo pruebas** (`node scripts/generar-config.mjs --pruebas`), que apunta a
-   `http://localhost:54321`. Nunca toca la base de datos real.
-2. Arranca `tests/soporte/supabase-local.mjs`: PostgreSQL embebido (PGlite) con **las mismas migraciones**
-   001 → seed → platos antiguos → 002 → 003, RLS y roles `anon`/`authenticated`, más una emulación de
-   PostgREST y Supabase Auth con JWT firmados, vencimiento, refresco y revocación de sesión.
-3. Arranca `scripts/servidor-local.mjs` (mismas cabeceras y CSP que Vercel) en el puerto 5181.
-4. Abre Chrome con `goog:loggingPrefs` (consola y red). **Tras cada caso** lee la consola y las respuestas
-   HTTP: un error `SEVERE` o una respuesta ≥ 400 no prevista hace **fallar** el caso aunque las comprobaciones
-   funcionales hayan pasado.
-5. Al terminar restaura `js/config.js` desde `.env` (o lo elimina si no hay `.env`).
+Reglas para no dejar basura en la base real:
 
-Usuarios de prueba (existen solo en el emulador, en memoria): `admin@konys.test` (administrador) y
-`otro@konys.test` (autenticado sin permisos). Su contraseña se genera al azar en cada ejecución
-(`SUPABASE_PRUEBA_CLAVE`); no hay contraseñas escritas en el código.
+- Las pruebas de validación **no guardan**: además de revisar el mensaje, comprueban que el navegador no hizo la
+  petición `rpc/crear_reserva`.
+- Las que crean datos usan el nombre **«PRUEBA SELENIUM»**, fechas a ~45 días y los eliminan en un bloque `finally`
+  (aunque la prueba falle) y otra vez al terminar la ejecución. El plato de prueba se crea **oculto** y nunca se ve en la carta pública.
+- Las pruebas que crean datos necesitan las credenciales del panel (para poder borrarlos); sin ellas se omiten.
 
-## 3. Criterio de aprobación
+## 3. Qué se prueba
 
-Ningún caso se aprueba solo porque Selenium encuentre elementos: cada uno verifica el resultado real
-(registros en la base mediante la API, estado de la sesión en `sessionStorage` y en Supabase Auth, mensajes
-mostrados, URL) y la ausencia de errores en consola/red.
+| Grupo | Casos |
+|---|---|
+| 1. Carga de páginas | Título, estilos, contenido de Supabase y página activa del menú en index, mesas, carta, contacto, reservar y admin |
+| 2. Navegación | Menú entre páginas separadas; la consulta rápida del inicio abre Mesas con los datos elegidos |
+| 3. Mesas | Mesas activas con zona, capacidad y estado; filtros de zona y personas |
+| 4. Reserva | Flujo completo mesa → fecha → hora → datos → confirmación, verificado en Supabase |
+| 5. Validaciones | Nombre vacío, personas = 0, más personas que la capacidad, contacto inválido, sin hora |
+| 6. Disponibilidad | Horario ocupado tachado; doble reserva simultánea (una sola queda guardada) |
+| 7. Carta | Categorías reales, solo platos reales y disponibles, buscador, fotos con `loading="lazy"` |
+| 8. Administración | Login incorrecto y correcto, acceso directo sin sesión, crear y activar/desactivar mesa, filtros de reservas, gestión de la carta, cerrar sesión (y «Atrás») |
+| 9. Seguridad | Inactividad con valor corto (aviso + cierre), valor de producción 300000, JWT ausente en la URL, XSS, usuario sin permisos, cierre entre pestañas |
+| 10. Responsive | 375 px sin desplazamiento horizontal en todas las páginas |
+| 11. Consola | Recorrido completo sin errores ni advertencias (y cada prueba revisa su propia consola) |
 
-**Errores provocados a propósito.** Algunos casos ejecutan acciones que *deben* fallar (contraseña incorrecta,
-dos clientes reservando la misma franja, borrar una mesa con historial, token manipulado o revocado). En ellos
-Chrome registra «Failed to load resource: 400/401/403/409». Ese mensaje lo escribe la capa de red del navegador
-(no el código de la aplicación) y es la evidencia de que el servidor rechazó la operación. Cada caso declara el
-patrón exacto que espera; cualquier otro error lo hace fallar.
+**Consola:** el navegador se abre con `goog:loggingPrefs`; después de cada prueba se leen `driver.get_log('browser')` y
+los registros de red. Un mensaje `SEVERE` o `WARNING`, o una respuesta HTTP ≥ 400, que la prueba no haya provocado a
+propósito la hace **fallar**. Las pocas pruebas que provocan un rechazo del servidor (contraseña incorrecta, doble
+reserva) declaran exactamente qué petición esperan que falle.
 
-## 4. Evolución de las ejecuciones
+## 4. Correcciones que salieron de las pruebas
 
-| Ejecución | Resultado | Problemas detectados | Corrección |
+| Ejecución | Resultado | Hallazgo | Corrección |
 |---|---|---|---|
-| 1 | 18/31 | (a) A04/A07: el panel siguió visible mientras las consultas salían **sin token** y recibían `403`. (b) `driver.get` a la misma página cambiando solo el `#hash` no recargaba. (c) Clics «interceptados» por pulsar durante el desplazamiento suave (`scroll-behavior: smooth`). | (a) **Defecto de la app**: `js/api.js` ahora trata el `403 permission denied` en el panel como sesión perdida y lo cierra. (b, c) Ajustes del arnés: recarga explícita y desplazamiento instantáneo antes de pulsar. |
-| 2 | 28/31 | (d) S04: con una sesión guardada **vencida**, supabase-js intentaba refrescarla y escribía `AuthApiError: Invalid Refresh Token` en consola. (e) A02 intentaba borrar la Mesa 6, que en la base limpia no tenía reservas. (f) A06 vaciaba el buscador sin disparar `input`. | (d) **Defecto de la app**: `js/supabase.js` descarta la sesión vencida antes de crear el cliente (la pestaña llevaba > 5 min inactiva, así que debe volver a iniciar sesión). (e, f) El caso crea su propia reserva de apoyo y dispara el evento. |
-| 3 | **31/31** | — | — |
+| 1 | 34/37 | La notificación flotante del panel tapaba los interruptores de la tabla durante 4 s (clic interceptado). | **App:** las notificaciones ya no capturan clics (`pointer-events: none`). |
+| 1 | | La prueba exigía el fondo crema también en el panel (que usa otro fondo por diseño); la alerta de «doble reserva» se leía mientras se repintaba. | Ajustes de la prueba (criterio por fuente cargada; lectura con JavaScript). |
+| 2 | **37/37** | — | — |
 
-## 5. Resultados de la última ejecución
+## 5. Resultado de la última ejecución (base local)
 
-Capturas de cada caso en `tests/selenium/resultados/capturas_<fecha>/` y detalle completo (incluidos los
-mensajes de consola previstos) en `tests/selenium/resultados/ultimo.json`.
+Ejecución del 7 de noviembre de 2026 · Chrome 156 · Selenium 4.52 · Python 3.14 · modo `--rapido --oculto`.
+**37 aprobadas, 0 fallidas, 0 omitidas.** Reporte: `pruebas/reportes/reporte_pruebas_2026-11-07_22-09-02.pdf`.
+Capturas destacadas en `docs/evidencias/selenium/`.
 
-<!-- RESULTADOS -->
-Ejecución: 2026-11-07 18-59-41 · Chrome 156.0.8078.80 · Selenium (Python) · **31/31 aprobadas**.
+**Pendiente:** ejecutar la misma suite contra el Supabase real (`.env` + `ADMIN_EMAIL_PRUEBAS` y
+`ADMIN_PASSWORD_PRUEBAS`) después de que Tatis aplique `docs/CAMBIOS_SUPABASE.md`. Antes de eso, «Categorías reales» y
+«Solo platos reales» fallarán a propósito, porque la base real aún tiene la carta inventada.
 
-| Código | Grupo | Caso | Estado | Resultado obtenido | Consola / red | Duración |
+| N.º | Grupo | Prueba | Estado | Resultado obtenido | Consola | Tiempo |
 |---|---|---|---|---|---|---|
-| F01 | Funcional | La página principal carga con mesas activas y sin errores | **APROBADA** | 8 mesas activas visibles; la Mesa 9 (inactiva) no aparece. | Sin errores | 2.1 s |
-| F02 | Funcional | Navegación entre secciones y páginas | **APROBADA** | Carta (ancla), Mi reserva y Reservar se abren correctamente. | Sin errores | 3.7 s |
-| F03 | Funcional | Las categorías de la carta corresponden al menú oficial | **APROBADA** | 15 pestañas (Recomendados + 14 categorías) en el mismo orden que la fuente oficial. | Sin errores | 1.0 s |
-| F04 | Funcional | Solo se muestran productos reales con su precio oficial | **APROBADA** | 67 productos visibles = 67 oficiales; precios iguales; 0 platos ficticios. | Sin errores | 8.3 s |
-| F05 | Funcional | Las fotos oficiales cargan y los productos sin foto lo indican | **APROBADA** | 71 fotos oficiales mostradas (incluye repetidas en Recomendados), 0 rotas; 2 productos rotulados «sin foto oficial». | Sin errores | 11.2 s |
-| F06 | Funcional | Menú Almuerzos muestra su franja de 12:00 a 2:30 p. m. | **APROBADA** | Aviso de franja visible y los 3 productos oficiales de almuerzo. | Sin errores | 1.4 s |
-| F07 | Funcional | Consulta de mesas disponibles por fecha y hora | **APROBADA** | Filtro de 6 personas para 2026-11-08: Mesa 5, Mesa 8. | Sin errores | 1.1 s |
-| F08 | Funcional | Consulta de horarios: calendario y horas según la configuración | **APROBADA** | 14 horas para el 2026-11-11 (almuerzo 12:30–1:30, noche 5:00–10:00); los lunes están cerrados. | Sin errores | 0.8 s |
-| F09 | Funcional | Creación de una reserva y verificación en la base de datos | **APROBADA** | Reserva 61D6A336 guardada: Mesa 3, 2026-11-12 12:30, 3 personas, estado confirmada. | Sin errores | 2.8 s |
-| F10 | Funcional | Validación de formularios (nombre vacío y capacidad excedida) | **APROBADA** | Nombre vacío marcado; 4 personas en Mesa 1 bloqueado en la interfaz y rechazado por el servidor (400). | Sin errores | 1.8 s |
-| F11 | Funcional | Prevención de reservas duplicadas (dos clientes a la vez) | **APROBADA** | Mesa 7 2026-11-14 12:30: el segundo cliente recibió «Alguien acaba de reservar»; 1 sola reserva en la base. | 2 respuesta(s) de error provocadas a propósito | 2.3 s |
-| F12 | Funcional | Mi reserva: consulta y cancelación por el cliente | **APROBADA** | Con nombre equivocado no se muestra nada; con el correcto se ve y se cancela; la franja 12:30 quedó libre. | Sin errores | 2.9 s |
-| A01 | Funcional | Inicio de sesión administrativo (incorrecto y correcto) | **APROBADA** | Contraseña incorrecta rechazada; correcta abre el panel; sesión solo en sessionStorage. | 2 respuesta(s) de error provocadas a propósito | 2.0 s |
-| A02 | Funcional | Gestión de mesas: crear, desactivar y eliminar | **APROBADA** | Mesa creada (visible al público), desactivada (oculta), Mesa 2 con historial protegida, mesa nueva eliminada. | 2 respuesta(s) de error provocadas a propósito | 4.7 s |
-| A03 | Funcional | Gestión de horarios: editar y validar una jornada | **APROBADA** | Martes noche cambiado a 5:00–10:00 p. m.; el servidor rechaza una reserva a las 9:30 p. m. (FUERA_DE_HORARIO). | Sin errores | 1.9 s |
-| A04 | Funcional | Gestión de reservas: filtrar y cambiar estado | **APROBADA** | Filtro por estado aplicado y una reserva pasó a «completada» en la base. | Sin errores | 2.6 s |
-| A05 | Funcional | Gestión de categorías: crear, editar y proteger las que tienen platos | **APROBADA** | Categoría creada (con validación del identificador), editada y eliminada; «Pizzas» protegida. | Sin errores | 4.7 s |
-| A06 | Funcional | Gestión de platos: crear sin precio, ocultar y eliminar | **APROBADA** | Plato sin precio guardado como «por confirmar», ocultado y eliminado; los 7 platos de prueba se identifican. | Sin errores | 4.2 s |
-| A07 | Funcional | Cierre de sesión manual | **APROBADA** | Sesión cerrada, almacenamiento limpio y /admin#reservas pide contraseña. | Sin errores | 3.2 s |
-| S01 | Seguridad | Acceso directo al panel sin autenticación | **APROBADA** | Se muestra el acceso; la API rechaza leer reservas como anónimo (403). | Sin errores | 1.3 s |
-| S02 | Seguridad | Usuario autenticado SIN permisos de administración | **APROBADA** | Acceso denegado en la interfaz; por API: actualizar precio → 0 filas, leer reservas → 0 filas, crear categoría → 403. | Sin errores | 1.3 s |
-| S03 | Seguridad | Token manipulado | **APROBADA** | La API responde 401 al token alterado y el panel vuelve a pedir contraseña. | 2 respuesta(s) de error provocadas a propósito | 1.7 s |
-| S04 | Seguridad | Token vencido | **APROBADA** | Token vencido: 401 en la API y el panel pide iniciar sesión. | Sin errores | 0.8 s |
-| S05 | Seguridad | Reutilizar una sesión ya cerrada | **APROBADA** | Restaurar la sesión copiada no reabre el panel; Auth responde 403 (sesión revocada). | 2 respuesta(s) de error provocadas a propósito | 1.9 s |
-| S06 | Seguridad | Tokens en la URL: se ignoran y se borran | **APROBADA** | URL limpiada a «/admin» y no se inició sesión. | Sin errores | 0.4 s |
-| S07 | Seguridad | Operaciones administrativas sin autorización (solicitudes reales) | **APROBADA** | Todas rechazadas: leer reservas → 403, insertar reserva directa → 403, cambiar precio → 403, desactivar mesa → 403, borrar horario → 403, crear categoría → 403, leer administradores → 403. | Sin errores | 0.1 s |
-| S08 | Seguridad | Protección frente a intentos repetidos de acceso | **APROBADA** | Tras 5 contraseñas incorrectas el formulario se bloquea 60 s (Supabase Auth también limita en el servidor). | 10 respuesta(s) de error provocadas a propósito | 2.5 s |
-| I01 | Inactividad | La actividad reinicia el contador y la inactividad cierra la sesión | **APROBADA** | Con actividad siguió abierta 15 s; sin actividad se cerró a los 8.5 s con el mensaje de inactividad. | Sin errores | 28.4 s |
-| I02 | Inactividad | Tras expirar no se pueden hacer operaciones y al volver a entrar el control se reinicia | **APROBADA** | Tras expirar el panel se oculta y la sesión queda revocada (403); al reingresar el contador empieza de cero. | Sin errores | 17.6 s |
-| I03 | Inactividad | El valor de producción es 5 minutos y el corto solo funciona en localhost | **APROBADA** | Producción: 300 000 ms (5 min); ?inactividad=8 solo se acepta en localhost. | Sin errores | 0.2 s |
-| C01 | Consola | Recorrido completo sin errores de consola ni de red | **APROBADA** | Sin errores en: index, reservar.html, reservar.html?mesa=4, mi-reserva.html, admin, admin#resumen, admin#mesas, admin#horarios, admin#reservas, admin#categorias, admin#carta, index (móvil 390 px). | Sin errores | 7.8 s |
-<!-- /RESULTADOS -->
+| 1 | 1. Carga de páginas | Carga de index.html | **APROBADA** | Título «Konys Pizza · Reserva tu mesa en Bucaramanga», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 2.5 s |
+| 2 | 1. Carga de páginas | Carga de mesas.html | **APROBADA** | Título «Mesas · Konys Pizza», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 1.2 s |
+| 3 | 1. Carga de páginas | Carga de carta.html | **APROBADA** | Título «Carta · Konys Pizza», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 1.5 s |
+| 4 | 1. Carga de páginas | Carga de contacto.html | **APROBADA** | Título «Contacto · Konys Pizza», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 1.2 s |
+| 5 | 1. Carga de páginas | Carga de reservar.html | **APROBADA** | Título «Reserva tu mesa · Konys Pizza», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 1.7 s |
+| 6 | 1. Carga de páginas | Carga de admin.html | **APROBADA** | Título «Acceso · Panel Konys Pizza», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 0.7 s |
+| 7 | 2. Navegación | Menú principal entre páginas separadas | **APROBADA** | Recorrido Mesas → Carta → Contacto → Inicio → Reservar con la página activa marcada. | Sin errores ni advertencias. | 3.2 s |
+| 8 | 2. Navegación | La consulta rápida del inicio lleva a Mesas | **APROBADA** | Mesas para 2026-11-27 y 4 personas: 6 mesas, todas con capacidad ≥ 4. | Sin errores ni advertencias. | 2.1 s |
+| 9 | 3. Mesas | Mesas visibles con zona, capacidad y estado | **APROBADA** | 8 mesas activas, todas con zona, capacidad y estado. | Sin errores ni advertencias. | 1.5 s |
+| 10 | 3. Mesas | Filtros por zona y por número de personas | **APROBADA** | Terraza: solo terraza. 6 personas: capacidades [6, 6]. | Sin errores ni advertencias. | 1.9 s |
+| 11 | 4. Reserva | Flujo completo: mesa → fecha → hora → datos → confirmación | **APROBADA** | Reserva 242F92E7: Mesa 1, 23/12/2026 8:00 p. m., 2 personas (eliminada al terminar). | Sin errores ni advertencias. | 4.1 s |
+| 12 | 5. Validaciones | Nombre vacío | **APROBADA** | Error visible, campo marcado y sin petición de guardado. | Sin errores ni advertencias. | 1.9 s |
+| 13 | 5. Validaciones | Personas = 0 | **APROBADA** | La interfaz no baja de 1 y el servidor rechaza 0 personas (PERSONAS_INVALIDAS); nada guardado. | Sin errores ni advertencias. | 2.1 s |
+| 14 | 5. Validaciones | Más personas que la capacidad de la mesa | **APROBADA** | Mesa 1 (hasta 2): bloqueado en la página y rechazado por el servidor. | Sin errores ni advertencias. | 2.6 s |
+| 15 | 5. Validaciones | Contacto inválido | **APROBADA** | Error del teléfono visible y sin petición de guardado. | Sin errores ni advertencias. | 2.6 s |
+| 16 | 5. Validaciones | Sin elegir hora | **APROBADA** | Botón desactivado sin hora y habilitado al elegir una. | Sin errores ni advertencias. | 1.4 s |
+| 17 | 6. Disponibilidad | Un horario ocupado aparece tachado | **APROBADA** | 8:30, 9:00 y 9:30 p. m. tachadas; 8:00 y 10:00 p. m. libres. | Sin errores ni advertencias. | 1.2 s |
+| 18 | 6. Disponibilidad | Doble reserva: dos clientes a la vez | **APROBADA** | El segundo cliente vio «Alguien acaba de reservar»; una sola reserva en la base. | Sin errores no previstos (1 mensaje(s) de error provocados a propósito por la prueba: respuesta de rechazo del servidor). | 2.5 s |
+| 19 | 7. Carta | Categorías reales de la carta | **APROBADA** | 15 pestañas: Recomendados, Entradas, Menú Infantil, Pizzas, Desgranados, Papas Ikónicas, Lasaña, Granizados, Sodas, Bebidas Frías, Cerveza, Cocteles, Postres, Menú Almuerzos, Congelados. | Sin errores ni advertencias. | 2.1 s |
+| 20 | 7. Carta | Solo platos reales y disponibles | **APROBADA** | 67 platos visibles, todos oficiales; ningún plato oculto ni inventado. | Sin errores ni advertencias. | 1.9 s |
+| 21 | 7. Carta | Buscador de la carta | **APROBADA** | «limonada» → Limonada de Panela, Limonada de Coco. | Sin errores ni advertencias. | 1.6 s |
+| 22 | 7. Carta | Las fotos de los platos cargan | **APROBADA** | 65 fotos cargadas, 0 rotas. | Sin errores ni advertencias. | 16.5 s |
+| 23 | 8. Administración | Inicio de sesión incorrecto | **APROBADA** | Mensaje de error visible y panel cerrado. | Sin errores no previstos (1 mensaje(s) de error provocados a propósito por la prueba: respuesta de rechazo del servidor). | 1.5 s |
+| 24 | 8. Administración | Inicio de sesión correcto | **APROBADA** | Panel abierto; token solo en sessionStorage. | Sin errores ni advertencias. | 1.3 s |
+| 25 | 8. Administración | Acceso directo al panel sin sesión | **APROBADA** | Se muestra el acceso; la API rechaza leer reservas sin sesión (403). | Sin errores ni advertencias. | 1.6 s |
+| 26 | 8. Administración | Crear mesa y activarla/desactivarla | **APROBADA** | Mesa creada (visible), desactivada (oculta) y reactivada; eliminada al terminar. | Sin errores ni advertencias. | 3.1 s |
+| 27 | 8. Administración | Filtros de reservas | **APROBADA** | Sin reservas canceladas: se muestra el estado vacío. | Sin errores ni advertencias. | 2.2 s |
+| 28 | 8. Administración | Gestión de la carta: crear, editar y eliminar un plato | **APROBADA** | Plato creado oculto (invisible al público), precio editado de $10.000 a $12.000; eliminado al terminar. | Sin errores ni advertencias. | 4.9 s |
+| 29 | 8. Administración | Cerrar sesión (y el botón Atrás no muestra el panel) | **APROBADA** | Acceso visible, sesión borrada y «Atrás» no reabre el panel. | Sin errores ni advertencias. | 4.1 s |
+| 30 | 9. Seguridad | Cierre por inactividad (valor corto solo en localhost) | **APROBADA** | Aviso y «Seguir conectado» funcionan; sin actividad se cerró a los 10.1 s. | Sin errores ni advertencias. | 19.9 s |
+| 31 | 9. Seguridad | Valor de producción del cierre por inactividad | **APROBADA** | Producción 300 000 ms; en Vercel se ignora ?inactividad; en localhost 10 000 ms. | Sin errores ni advertencias. | 0.6 s |
+| 32 | 9. Seguridad | El token (JWT) nunca aparece en la URL | **APROBADA** | Token falso borrado y sin sesión; navegando el panel la URL nunca contiene el JWT. | Sin errores ni advertencias. | 3.5 s |
+| 33 | 9. Seguridad | Texto con HTML se muestra como texto (XSS) | **APROBADA** | El nombre con HTML se mostró como texto, sin imagen ni alerta. | Sin errores ni advertencias. | 2.0 s |
+| 34 | 9. Seguridad | Usuario autenticado sin permisos de administración | **APROBADA** | Acceso denegado y la API no modificó ningún precio (0 filas). | Sin errores ni advertencias. | 1.2 s |
+| 35 | 9. Seguridad | Cerrar sesión en una pestaña cierra las demás | **APROBADA** | Al cerrar sesión en una pestaña, la otra volvió al acceso. | Sin errores ni advertencias. | 4.2 s |
+| 36 | 10. Responsive | Diseño adaptable en celular (375 px) | **APROBADA** | Sin desbordamiento en: index.html, mesas.html, carta.html, contacto.html, reservar.html, admin.html. | Sin errores ni advertencias. | 5.5 s |
+| 37 | 11. Consola | Recorrido completo sin errores ni advertencias en consola | **APROBADA** | Sin errores ni advertencias en: index.html, mesas.html, carta.html, contacto.html, reservar.html, mi-reserva.html, admin.html, admin#resumen, admin#mesas, admin#horarios, admin#reservas, admin#categorias, admin#carta. | Sin errores ni advertencias. | 14.0 s |

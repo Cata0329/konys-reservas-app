@@ -13,7 +13,7 @@
     "menu:extraer": "node scripts/extraer-menu-konys.mjs",
     "menu:sql": "node scripts/generar-sql-catalogo.mjs",
     "test": "node --test \"tests/**/*.test.mjs\"",
-    "test:selenium": "py -X utf8 tests/selenium/ejecutar.py"
+    "test:selenium": "py -X utf8 pruebas/pruebas_formulario.py --rapido --oculto --no-abrir"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.2.17"

@@ -1,7 +1,8 @@
 """
 reporte_pdf.py
 ==============
-Genera el reporte PDF de las pruebas automáticas usando la librería ReportLab.
+Genera el reporte PDF de las pruebas automáticas de Konys Pizza (Selenium) con ReportLab.
+Basado en el ejemplo del curso (github.com/cacarrascal/EjemploSelenium).
 
 Contenido del reporte:
   1. Portada con el resultado general y los totales.
@@ -23,18 +24,18 @@ from reportlab.platypus import (Image, KeepTogether, PageBreak, Paragraph,
 
 
 # ---------------------------------------------------------
-# Colores (los mismos del formulario)
+# Colores (sistema visual de Konys Pizza)
 # ---------------------------------------------------------
-CAFE_OSCURO = colors.HexColor("#3b2418")
-CAFE        = colors.HexColor("#6f4e37")
-DORADO      = colors.HexColor("#c8a27a")
-BEIGE       = colors.HexColor("#f3e9dc")
-CREMA       = colors.HexColor("#fbf7f2")
-BEIGE_BORDE = colors.HexColor("#dccab5")
-TEXTO       = colors.HexColor("#2b201a")
-GRIS        = colors.HexColor("#7a6a5d")
-VERDE       = colors.HexColor("#2e7d4f")
-ROJO        = colors.HexColor("#b3261e")
+CAFE_OSCURO = colors.HexColor("#173F35")   # verde bosque (marca)
+CAFE        = colors.HexColor("#1F5446")
+DORADO      = colors.HexColor("#E9D56B")   # amarillo limón
+BEIGE       = colors.HexColor("#F5E5C8")
+CREMA       = colors.HexColor("#FFF5E6")   # crema vainilla
+BEIGE_BORDE = colors.HexColor("#E7DCC8")
+TEXTO       = colors.HexColor("#252824")   # carbón
+GRIS        = colors.HexColor("#6E6A5E")
+VERDE       = colors.HexColor("#14583A")
+ROJO        = colors.HexColor("#A3302A")
 GRIS_OMITIDA = colors.HexColor("#8a8a8a")
 
 COLOR_ESTADO = {"APROBADA": VERDE, "FALLIDA": ROJO, "OMITIDA": GRIS_OMITIDA}
@@ -115,7 +116,7 @@ def _decorar_pagina(canvas, doc):
 
     canvas.setFillColor(BEIGE)
     canvas.setFont("Helvetica-Bold", 9)
-    canvas.drawString(2 * cm, alto - 0.75 * cm, "RESTAURANTE EL FOGÓN DORADO")
+    canvas.drawString(2 * cm, alto - 0.75 * cm, "KONYS PIZZA · SISTEMA DE RESERVAS")
     canvas.setFont("Helvetica", 9)
     canvas.drawRightString(ancho - 2 * cm, alto - 0.75 * cm, "Reporte de pruebas automatizadas")
 
@@ -143,7 +144,7 @@ def _portada(resultados, info):
     elementos = [
         _p("Reporte de pruebas automatizadas", TITULO),
         Spacer(1, 4),
-        _p("Formulario de reservas · Restaurante El Fogón Dorado", SUBTITULO),
+        _p("Konys Pizza · Sistema de reservas (sitio público y panel de administración)", SUBTITULO),
         Spacer(1, 4),
         _p(f"Ejecutado el {_fecha_larga(info['inicio'])} · Duración total: {_duracion(duracion)}", FECHA),
         Spacer(1, 16),
@@ -216,7 +217,8 @@ def _portada(resultados, info):
         ["Selenium", info["selenium"]],
         ["Python", info["python"]],
         ["Sistema operativo", info["sistema"]],
-        ["Página probada", info["url"] + "  (servidor local temporal)"],
+        ["Sitio probado", info["url"] + "  (servidor local temporal)"],
+        ["Base de datos", info["base"]],
         ["Modo", info["modo"]],
         ["Inicio / fin", f"{info['inicio']:%d/%m/%Y %H:%M:%S}  —  {info['fin']:%H:%M:%S}"],
     ]
@@ -235,22 +237,25 @@ def _portada(resultados, info):
         _p("Cómo se hicieron las pruebas", H2),
         _p("Las pruebas se ejecutaron con Selenium WebDriver, que controla el navegador como lo "
            "haría una persona: hace clic, escribe en los campos y lee los mensajes que aparecen en "
-           "pantalla. Antes de cada prueba la página se vuelve a cargar, para que ninguna prueba "
-           "dependa de otra. En las pruebas de datos incorrectos se llena bien todo el formulario y "
-           "se deja un solo dato errado, así se comprueba que aparece únicamente el error esperado. "
-           "Al final de cada prueba se tomó una captura de pantalla, que se incluye en el detalle."),
+           "pantalla. Las páginas cargan sus datos desde Supabase, así que cada prueba espera "
+           "elementos concretos (tarjetas de mesas, botones de hora, platos) con WebDriverWait. "
+           "Además de lo que se ve en pantalla, se comprueba el resultado real en la base de datos "
+           "y, después de cada prueba, la consola del navegador: cualquier error (SEVERE) o "
+           "advertencia (WARNING) no prevista hace fallar la prueba. Las pruebas de validación no "
+           "guardan nada; las que crean datos usan el nombre «PRUEBA SELENIUM» y los eliminan al "
+           "terminar, aunque la prueba falle. Al final de cada prueba se tomó una captura."),
     ]
     return elementos
 
 
 def _tabla_resumen(resultados):
-    filas = [[_p("N.º", ENCABEZADO), _p("Prueba", ENCABEZADO),
+    filas = [[_p("N.º", ENCABEZADO), _p("Grupo", ENCABEZADO), _p("Prueba", ENCABEZADO),
               _p("Resultado", ENCABEZADO), _p("Tiempo", ENCABEZADO)]]
     for r in resultados:
-        filas.append([_p(r["numero"], CELDA), _p(r["nombre"], CELDA),
+        filas.append([_p(r["numero"], CELDA), _p(r.get("grupo", ""), CELDA), _p(r["nombre"], CELDA),
                       _estado(r["estado"]), _p(f"{r['duracion']:.1f} s", CELDA)])
 
-    tabla = Table(filas, colWidths=[1.2 * cm, ANCHO_UTIL - 6.2 * cm, 3 * cm, 2 * cm], repeatRows=1)
+    tabla = Table(filas, colWidths=[1.1 * cm, 3.2 * cm, ANCHO_UTIL - 9.3 * cm, 3 * cm, 2 * cm], repeatRows=1)
     tabla.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), CAFE_OSCURO),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, CREMA]),
@@ -284,6 +289,7 @@ def _detalle(resultados):
         datos = Table([
             [_p("Esperado", CELDA_NEG), _p(r["esperado"], CELDA)],
             [_p("Obtenido", CELDA_NEG), _p(r["obtenido"], CELDA)],
+            [_p("Consola", CELDA_NEG), _p(r.get("consola", "Sin errores ni advertencias."), CELDA)],
             [_p("Tiempo", CELDA_NEG), _p(f"{r['duracion']:.1f} s", CELDA)],
         ], colWidths=[2.4 * cm, ANCHO_UTIL - 2.4 * cm])
         datos.setStyle(TableStyle([
@@ -307,7 +313,7 @@ def generar_reporte(ruta_pdf, resultados, info):
     documento = SimpleDocTemplate(
         str(ruta_pdf), pagesize=letter,
         leftMargin=2 * cm, rightMargin=2 * cm, topMargin=2 * cm, bottomMargin=2 * cm,
-        title="Reporte de pruebas automatizadas - Formulario de reservas",
+        title="Reporte de pruebas automatizadas - Konys Pizza",
         author="Pruebas automáticas con Selenium",
     )
     documento.texto_pie = f"Generado el {info['fin']:%d/%m/%Y a las %H:%M}"
