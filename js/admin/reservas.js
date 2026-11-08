@@ -1,4 +1,5 @@
-// Panel · Reservas: métricas del día, filtros, tabla paginada y cambio de estado.
+// Panel · Reservas: total de todas las fechas, métricas del día, filtros por periodo,
+// tabla paginada y cambio de estado.
 import * as api from '../api.js';
 import { ahoraBogota, aMinutos, formatoHora, formatoFechaLarga, formatoFechaTabla, capitalizar } from '../formato.js';
 import { $, esc, icono, etiqueta, estadoVacio, alerta, notificar } from '../ui.js';
@@ -9,7 +10,9 @@ const ESTADOS = [['confirmada', 'Confirmada'], ['completada', 'Completada'], ['c
 
 export async function montar(cont) {
   const ahora = ahoraBogota();
-  const f = { fecha: ahora.fecha, mesaId: '', estado: '', pagina: 1 };
+  // periodo: 'hoy' | 'proximas' (hoy en adelante) | 'todas' (todas las fechas) | 'fecha' (un día elegido)
+  const f = { periodo: 'hoy', fecha: ahora.fecha, mesaId: '', estado: '', pagina: 1 };
+  const PERIODOS = [['hoy', 'Hoy'], ['proximas', 'Próximas (desde hoy)'], ['todas', 'Todas las fechas'], ['fecha', 'Una fecha…']];
   const mesas = await api.obtenerTodasLasMesas();
 
   cont.innerHTML = `
@@ -18,7 +21,9 @@ export async function montar(cont) {
     </header>
     <div class="metricas" id="metricas"><div class="esqueleto"><span></span></div></div>
     <form class="caja filtros" id="filtros" aria-label="Filtrar reservas">
-      <div class="campo"><label for="f-fecha">Fecha</label><input class="entrada" type="date" id="f-fecha" value="${f.fecha}"></div>
+      <div class="campo"><label for="f-periodo">Periodo</label>
+        <select class="selector" id="f-periodo">${PERIODOS.map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select></div>
+      <div class="campo" id="campo-fecha" hidden><label for="f-fecha">Fecha</label><input class="entrada" type="date" id="f-fecha" value="${f.fecha}"></div>
       <div class="campo"><label for="f-mesa">Mesa</label>
         <select class="selector" id="f-mesa"><option value="">Todas las mesas</option>
           ${mesas.map((m) => `<option value="${m.id}">${esc(m.nombre)}${m.activa ? '' : ' (inactiva)'}</option>`).join('')}</select></div>
@@ -30,13 +35,20 @@ export async function montar(cont) {
     </form>
     <div id="tabla-reservas"></div>`;
 
+  const mostrarFecha = () => { $('#campo-fecha').hidden = $('#f-periodo').value !== 'fecha'; };
+  $('#f-periodo').addEventListener('change', mostrarFecha);
   const leerFiltros = () => {
-    f.fecha = $('#f-fecha').value;
+    f.periodo = $('#f-periodo').value;
+    // Compatibilidad: si se escribe una fecha y se borra, se entiende «todas las fechas».
+    if (f.periodo === 'fecha' && !$('#f-fecha').value) f.periodo = 'todas';
+    f.fecha = f.periodo === 'hoy' ? ahora.fecha : $('#f-fecha').value;
     f.mesaId = $('#f-mesa').value;
     f.estado = $('#f-estado').value;
     f.pagina = 1;
   };
   const limpiar = () => {
+    $('#f-periodo').value = 'todas';
+    mostrarFecha();
     $('#f-fecha').value = '';
     $('#f-mesa').value = '';
     $('#f-estado').value = '';
@@ -47,9 +59,9 @@ export async function montar(cont) {
   $('#limpiar').addEventListener('click', limpiar);
 
   async function cargarMetricas() {
-    const dia = f.fecha || ahora.fecha;
+    const dia = (f.periodo === 'hoy' || f.periodo === 'fecha') && f.fecha ? f.fecha : ahora.fecha;
     try {
-      const filas = await api.obtenerReservasDelDia(dia);
+      const [filas, totales] = await Promise.all([api.obtenerReservasDelDia(dia), api.resumenReservas(ahora.fecha)]);
       const cuenta = (e) => filas.filter((r) => r.estado === e).length;
       const proxima = filas.find((r) => r.estado === 'confirmada'
         && (dia > ahora.fecha || (dia === ahora.fecha && aMinutos(r.hora_inicio) >= ahora.minutos)));
@@ -57,6 +69,8 @@ export async function montar(cont) {
       const conReserva = new Set(filas.filter((r) => r.estado !== 'cancelada').map((r) => r.mesa_id)).size;
       const inactivas = mesas.filter((m) => !m.activa).map((m) => m.nombre);
       $('#metricas').innerHTML = `
+        <div class="metrica metrica--total" data-testid="total-reservas"><span>Total de reservas (todas las fechas)</span><strong>${totales.total}</strong>
+          <small>${plural(totales.proximas, 'próxima')} · ${plural(totales.completadas, 'completada')} · ${plural(totales.canceladas, 'cancelada')}</small></div>
         <div class="metrica"><span>Reservas del ${dia === ahora.fecha ? 'día' : formatoFechaTabla(dia)}</span><strong>${filas.length}</strong>
           <small>${plural(cuenta('confirmada'), 'confirmada')} · ${plural(cuenta('completada'), 'completada')} · ${plural(cuenta('cancelada'), 'cancelada')}</small></div>
         <div class="metrica"><span>Próxima reserva</span><strong>${proxima ? formatoHora(proxima.hora_inicio) : '—'}</strong>
@@ -74,14 +88,18 @@ export async function montar(cont) {
     cargarMetricas();
     let resultado;
     try {
-      resultado = await api.obtenerReservas({ ...f, porPagina: POR_PAGINA });
+      resultado = await api.obtenerReservas({
+        fecha: f.periodo === 'hoy' || f.periodo === 'fecha' ? f.fecha : null,
+        desdeFecha: f.periodo === 'proximas' ? ahora.fecha : null,
+        mesaId: f.mesaId, estado: f.estado, pagina: f.pagina, porPagina: POR_PAGINA,
+      });
     } catch (e) {
       zona.innerHTML = alerta('error', 'No pudimos cargar las reservas.', e.message);
       return;
     }
     const { filas, total } = resultado;
     if (!filas.length) {
-      const hayFiltros = f.fecha || f.mesaId || f.estado;
+      const hayFiltros = f.periodo !== 'todas' || f.mesaId || f.estado;
       zona.innerHTML = estadoVacio({
         titulo: hayFiltros ? 'No hay reservas para este filtro' : 'Aún no hay reservas',
         texto: hayFiltros ? 'Prueba con otra fecha o quita el filtro de mesa para ver toda la agenda.' : 'Cuando lleguen, las verás aquí.',

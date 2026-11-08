@@ -5,7 +5,8 @@ import { esc, icono, etiqueta, estadoVacio } from '../ui.js';
 
 export async function montar(cont, { ir }) {
   const ahora = ahoraBogota();
-  const [reservas, mesas] = await Promise.all([api.obtenerReservasDelDia(ahora.fecha), api.obtenerTodasLasMesas()]);
+  const [reservas, mesas, totales] = await Promise.all([
+    api.obtenerReservasDelDia(ahora.fecha), api.obtenerTodasLasMesas(), api.resumenReservas(ahora.fecha)]);
   const vigentes = reservas.filter((r) => r.estado !== 'cancelada');
   const proximas = vigentes.filter((r) => r.estado === 'confirmada' && aMinutos(r.hora_inicio) >= ahora.minutos);
   const activas = mesas.filter((m) => m.activa);
@@ -17,6 +18,8 @@ export async function montar(cont, { ir }) {
       <div><h1>${saludo}</h1><p>${capitalizar(formatoFechaLarga(ahora.fecha))} · lo que pasa hoy en el restaurante</p></div>
     </header>
     <div class="metricas">
+      <div class="metrica metrica--total" data-testid="total-reservas"><span>Total de reservas (todas las fechas)</span><strong>${totales.total}</strong>
+        <small>${totales.proximas} por venir · ${totales.completadas} completadas · ${totales.canceladas} canceladas</small></div>
       <div class="metrica"><span>Reservas del día</span><strong>${vigentes.length}</strong>
         <small>${vigentes.length - proximas.length} ya pasaron o se completaron · ${proximas.length} por llegar</small></div>
       <div class="metrica"><span>Próximas reservas</span><strong>${proximas.length}</strong>

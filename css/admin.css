@@ -48,7 +48,9 @@ body.admin { background: var(--crema-panel); background-image: none; }
 .principal__cabecera p { color: var(--texto-suave); margin-top: 6px; }
 
 /* ---------- Tarjetas de métricas ---------- */
-.metricas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+.metricas { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.metrica.metrica--total { background: var(--verde); color: var(--crema); border-color: var(--verde); }
+.metrica.metrica--total small { color: rgba(255, 245, 230, .8); }
 .metrica { background: var(--blanco); border: 1px solid var(--borde-suave); border-radius: var(--r-admin); padding: 22px 24px; }
 .metrica span { font-size: 14px; font-weight: 500; }
 .metrica strong { display: block; font-family: var(--fuente-titulos); font-size: clamp(30px, 3.4vw, 44px); line-height: 1.1; margin: 4px 0; }
@@ -60,7 +62,9 @@ body.admin { background: var(--crema-panel); background-image: none; }
 .caja__cabecera h2 { font-size: 24px; }
 
 /* ---------- Filtros ---------- */
-.filtros { display: grid; grid-template-columns: 1fr 1fr 1fr auto auto; gap: 14px; align-items: end; margin-bottom: 20px; }
+.filtros { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; margin-bottom: 20px; }
+.filtros > .campo { flex: 1 1 180px; min-width: 0; }
+.filtros > .btn { flex: none; }
 .filtros .btn { min-height: 46px; }
 .filtros .entrada, .filtros .selector { min-height: 46px; }
 

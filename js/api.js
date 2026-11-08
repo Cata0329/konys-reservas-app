@@ -194,19 +194,42 @@ export async function esAdministrador() {
 // ---------------------------------------------------------------------
 // Panel: reservas
 // ---------------------------------------------------------------------
-export async function obtenerReservas({ fecha, mesaId, estado, pagina = 1, porPagina = 10 }) {
+/**
+ * Reservas paginadas. fecha = un día concreto; desdeFecha = ese día y los siguientes;
+ * sin ninguno de los dos = todas las fechas (las más recientes primero).
+ */
+export async function obtenerReservas({ fecha, desdeFecha, mesaId, estado, pagina = 1, porPagina = 10 }) {
   const desde = (pagina - 1) * porPagina;
+  const recientesPrimero = !fecha && !desdeFecha;
   const r = await ejecutar((db) => {
     let q = db.from('reservas')
       .select('id, cliente_nombre, cliente_contacto, num_personas, fecha, hora_inicio, hora_fin, estado, mesa_id, mesas(nombre, zona)', { count: 'exact' })
-      .order('fecha', { ascending: true }).order('hora_inicio', { ascending: true })
+      .order('fecha', { ascending: !recientesPrimero }).order('hora_inicio', { ascending: !recientesPrimero })
       .range(desde, desde + porPagina - 1);
     if (fecha) q = q.eq('fecha', fecha);
+    if (desdeFecha) q = q.gte('fecha', desdeFecha);
     if (mesaId) q = q.eq('mesa_id', mesaId);
     if (estado) q = q.eq('estado', estado);
     return q;
   });
   return { filas: r.data, total: r.count ?? 0 };
+}
+
+/**
+ * Totales de reservas de TODAS las fechas, sin descargar las filas
+ * (consultas count con head: true, así no aplica el límite de filas de Supabase).
+ */
+export async function resumenReservas(hoy) {
+  const contar = async (filtro) => (await ejecutar((db) =>
+    filtro(db.from('reservas').select('id', { count: 'exact', head: true })))).count ?? 0;
+  const [total, confirmadas, completadas, canceladas, proximas] = await Promise.all([
+    contar((q) => q),
+    contar((q) => q.eq('estado', 'confirmada')),
+    contar((q) => q.eq('estado', 'completada')),
+    contar((q) => q.eq('estado', 'cancelada')),
+    contar((q) => q.eq('estado', 'confirmada').gte('fecha', hoy)),
+  ]);
+  return { total, confirmadas, completadas, canceladas, proximas };
 }
 
 export const obtenerReservasDelDia = (fecha) => datos((db) =>
