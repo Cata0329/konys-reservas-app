@@ -33,7 +33,7 @@ Advertencias (`WARNING`) registradas en la consola durante todos los recorridos:
 | 2 | Panel (`/admin`) | Respuestas `403 Forbidden` en `rest/v1/reservas` mientras el panel seguía visible (Selenium, ejecución 1) | Si la sesión desaparecía del almacenamiento, las consultas salían como rol anónimo y la app solo mostraba un aviso | `js/api.js`: un `42501 permission denied` o un JWT inválido dispara `konys:sesion-invalida` y `js/admin/app.js` cierra la sesión | Ya no hay consultas anónimas desde un panel abierto |
 | 3 | Panel (`/admin`) | `AuthApiError: Invalid Refresh Token: Refresh Token Not Found` en consola y `400` en `/auth/v1/token?grant_type=refresh_token` (Selenium, ejecución 2) | Al abrir el panel con una sesión guardada vencida, supabase-js intentaba renovarla en silencio | `js/supabase.js`: las sesiones con el token vencido se descartan antes de crear el cliente | Sin errores; se muestra el acceso |
 | 4 | Sitio público sin configurar | `GET js/config.js 404` cuando no existe `.env` | El archivo se genera desde `.env` | No es un error de un recorrido normal: con la configuración hecha (`npm run config` o el build de Vercel) el archivo existe. Sin él, la página muestra un aviso explicando qué configurar | Documentado |
-| 5 | Pruebas Selenium del pull | 30 capturas idénticas, ninguna prueba válida | El script pertenece a otro proyecto | Nueva suite en `tests/selenium/` | 31/31 casos |
+| 5 | Pruebas Selenium del pull | 30 capturas idénticas, ninguna prueba válida | El script era el ejemplo del profesor para otra app | Plantilla reescrita para Konys en `pruebas/` | 37/37 casos |
 
 No se silenció la consola, no se filtraron mensajes ni se capturaron excepciones para ignorarlas: cada
 corrección elimina la causa.
@@ -57,10 +57,10 @@ Son respuestas de error del servidor en escenarios negativos, registradas por la
 |---|---|
 | `npm install` | Sin errores (1 dependencia de desarrollo: `@electric-sql/pglite`) |
 | `pip install -r pruebas/requirements.txt` | Instalados Selenium 4.52 y ReportLab 5.1 (no estaban en este equipo) |
-| `npm test` | **44/44** (lógica, inactividad, CSP, validaciones y migraciones SQL con RLS) |
-| `npm run supabase:pruebas` | Arranca y aplica 001 → seed → platos antiguos → 002 → 003 sin errores |
+| `npm test` | **48/48** (lógica, inactividad, CSP, validaciones, migraciones SQL con RLS y reversión) |
+| `npm run supabase:pruebas` | Arranca y aplica 001 → seed → platos antiguos → 002 → seed_carta_real → 003 → 004 sin errores |
 | `node scripts/servidor-local.mjs` | Arranca; sirve con CSP y cabeceras de seguridad |
-| `py -X utf8 tests/selenium/ejecutar.py` | **31/31** |
+| `py pruebas/pruebas_formulario.py --rapido --oculto` | **37/37** (base local) |
 | `node --check` sobre todos los `.js`/`.mjs` | Sin errores de sintaxis |
 
 Avisos de terminal no relacionados con el código: `pip` sugiere actualizarse y avisa de que

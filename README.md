@@ -2,88 +2,99 @@
 
 Aplicación web para reservar mesas en Konys Pizza (Cra. 36 con calle 41, Bucaramanga) sin crear cuenta,
 con la carta oficial del restaurante y un panel de administración protegido.
+Proyecto del curso de la Universidad de Santander (UDES), prof. Carlos Carrascal.
 
 - **Frontend:** HTML5, CSS3 y JavaScript vanilla (módulos ES), sin framework ni compilación.
 - **Backend:** Supabase (PostgreSQL, Auth y Storage) con Row Level Security.
 - **Pruebas:** Node `node:test` + PGlite (lógica y SQL) y Selenium con Python (recorridos en Chrome).
-- **Despliegue previsto:** Vercel. **Diseño:** fiel a Figma (capturas en `docs/diseno/`).
+- **Despliegue:** Vercel. **Diseño:** fiel a Figma (capturas en `docs/diseno/`).
 
-> Enlace de la aplicación desplegada: _pendiente de autorización_ · Enlace del video: _pendiente_
+> **Aplicación:** <https://konys-reservas-app.vercel.app/> · **Video:** _pendiente_
 
 ## Documentación
 
 | Documento | Contenido |
 |---|---|
-| [`docs/INFORME_AUDITORIA.md`](docs/INFORME_AUDITORIA.md) | Estado de RF-01…RF-14 y RNF-01…RNF-09 con evidencias |
-| [`docs/CATALOGO_KONYS.md`](docs/CATALOGO_KONYS.md) | Catálogo oficial (67 productos), decisiones de modelado e imágenes |
+| [`docs/Konys_Pizza_-_Sistema_de_Reservas.pdf`](docs/Konys_Pizza_-_Sistema_de_Reservas.pdf) | Documento del proyecto (requisitos) |
+| [`docs/INFORME_AUDITORIA.md`](docs/INFORME_AUDITORIA.md) | Requisito por requisito (RF, RNF y entregables): cumple / parcial / falta |
+| [`docs/CAMBIOS_SUPABASE.md`](docs/CAMBIOS_SUPABASE.md) | **Para Tatis:** qué SQL ejecutar, en qué orden, cómo comprobarlo y cómo revertirlo |
+| [`docs/CATALOGO_KONYS.md`](docs/CATALOGO_KONYS.md) | Carta real (67 productos), decisiones de modelado e imágenes |
+| [`docs/INFORME_PRUEBAS_SELENIUM.md`](docs/INFORME_PRUEBAS_SELENIUM.md) | Pruebas Selenium: casos, resultados y correcciones |
 | [`docs/INFORME_CONSOLA.md`](docs/INFORME_CONSOLA.md) | Revisión de consola, red y terminal |
-| [`docs/INFORME_PRUEBAS_SELENIUM.md`](docs/INFORME_PRUEBAS_SELENIUM.md) | Casos Selenium, resultados y correcciones |
 | [`docs/REGLA_DISPONIBILIDAD.md`](docs/REGLA_DISPONIBILIDAD.md) | Cómo se evitan las reservas duplicadas |
+
+## Páginas
+
+| Página | Archivo | Contenido |
+|---|---|---|
+| Inicio | `index.html` | Portada y consulta rápida (lleva a Mesas con la fecha, hora y personas elegidas) |
+| Mesas | `mesas.html` | Disponibilidad, plano del salón y la terraza, filtros |
+| Carta | `carta.html` | Carta real por categorías, buscador |
+| Reservar | `reservar.html` | Flujo mesa → fecha → hora → datos → confirmación |
+| Contacto | `contacto.html` | Dirección y horario por día (desde Supabase) |
+| Mi reserva | `mi-reserva.html` | Consultar o cancelar una reserva con código + nombre |
+| Panel | `admin.html` | Resumen, Mesas, Horarios, Reservas, Categorías y Carta (secciones por `#hash`) |
+
+Inicio, Mesas, Carta y Contacto comparten encabezado y pie con `js/layout.js` (sin duplicar HTML); el menú marca la
+página activa con `aria-current="page"`.
 
 ## Estructura
 
 ```
 konys-reservas-app/
-├── index.html · reservar.html · mi-reserva.html · admin.html
+├── index.html · mesas.html · carta.html · contacto.html · reservar.html · mi-reserva.html · admin.html
 ├── css/                    styles.css (sistema visual + sitio), admin.css
 ├── js/
 │   ├── supabase.js         Cliente único (PKCE, sesión en sessionStorage, tiempo límite)
 │   ├── api.js              TODAS las consultas a Supabase y traducción de errores
+│   ├── layout.js           Encabezado y pie compartidos
+│   ├── consulta.js         Formulario «Consulta disponibilidad» (inicio y mesas)
+│   ├── pagina-inicio.js · pagina-mesas.js · pagina-carta.js · pagina-contacto.js
+│   ├── reserva.js · mi-reserva.js
 │   ├── disponibilidad.js · validaciones.js · formato.js · ui.js
-│   ├── inicio.js · reserva.js · mi-reserva.js
 │   └── admin/              app.js (acceso), inactividad.js (5 min), una sección por archivo
 ├── supabase/
-│   ├── migrations/001_esquema_inicial.sql      Tablas, reglas, RLS
-│   ├── migrations/002_catalogo_y_consulta.sql  Respaldo, columnas del catálogo, «Mi reserva»
-│   ├── migrations/003_catalogo_oficial.sql     Catálogo oficial (GENERADO)
-│   └── seed.sql                                Mesas y horarios iniciales
-├── scripts/
-│   ├── generar-config.mjs        .env → js/config.js (rechaza claves secretas)
-│   ├── extraer-menu-konys.mjs    Menú oficial → docs/menu-oficial-konys.json
-│   ├── generar-sql-catalogo.mjs  JSON → migración 003 + docs/CATALOGO_KONYS.md
-│   ├── seguridad-http.mjs        CSP y cabeceras (las mismas que vercel.json)
-│   └── servidor-local.mjs        Servidor de desarrollo
-├── tests/                  *.test.mjs (Node), sql/, selenium/, soporte/supabase-local.mjs
-├── pruebas/                Aporte previo (Selenium de otro formulario; ver informe)
+│   ├── migrations/001_esquema_inicial.sql    Tablas, reglas de reserva, RLS (ya ejecutada)
+│   ├── migrations/002_carta_real.sql         Respaldo + estructura de la carta real
+│   ├── migrations/003_consulta_reservas.sql  Funciones de «Mi reserva»
+│   ├── migrations/004_horarios_reales.sql    Todos los días, dos jornadas
+│   ├── seed.sql                              Mesas y horarios iniciales (instalación nueva)
+│   ├── seed_carta_real.sql                   Carta real: 14 categorías, 67 platos (GENERADO)
+│   └── revertir/revertir_carta_real.sql      Deshace la carta real (probado)
+├── scripts/                generar-config, servidor-local, seguridad-http, extraer-menu-konys, generar-sql-catalogo
+├── tests/                  *.test.mjs (Node), sql/, soporte/supabase-local.mjs
+├── pruebas/                Selenium: pruebas_formulario.py, reporte_pdf.py, reportes/
+├── ejecutar_pruebas.bat
 └── docs/
 ```
 
 ## Puesta en marcha
 
-### 1. Base de datos en Supabase
+### 1. Base de datos (Supabase)
 
-En **SQL Editor**, ejecuta en este orden (todas son idempotentes y ninguna borra tablas ni reservas):
+La guía paso a paso, con comprobaciones y cómo revertir, está en
+**[`docs/CAMBIOS_SUPABASE.md`](docs/CAMBIOS_SUPABASE.md)**. Resumen del orden en el SQL Editor:
 
-| Paso | Archivo | Qué hace |
-|---|---|---|
-| 1 | `supabase/migrations/001_esquema_inicial.sql` | Esquema, reglas de reserva, RLS. *(Ya ejecutada si la base existe.)* |
-| 2 | `supabase/seed.sql` | 9 mesas y horarios (solo si las tablas están vacías). *(Ya ejecutado si la base existe.)* |
-| 3 | `supabase/migrations/002_catalogo_y_consulta.sql` | **Respalda** `platos` y `categorias` en el esquema `respaldo`, añade columnas del catálogo y las funciones de «Mi reserva». |
-| 4 | `supabase/migrations/003_catalogo_oficial.sql` | Carga las 14 categorías y 67 productos oficiales, oculta los 7 platos de ejemplo y corrige «Limonada de coco». |
+1. `supabase/migrations/002_carta_real.sql`
+2. `supabase/seed_carta_real.sql`
+3. `supabase/migrations/003_consulta_reservas.sql`
+4. `supabase/migrations/004_horarios_reales.sql`
 
-Comprobación después del paso 4:
+(En una instalación desde cero, antes van `001_esquema_inicial.sql` y `seed.sql`.)
 
-```sql
-select origen, disponible, count(*) from public.platos group by 1, 2 order by 1, 2;
--- Esperado: oficial/true 67 · prueba/false 7
-select count(*) from respaldo.platos_antes_catalogo;  -- 8 (respaldo previo)
-```
-
-Para actualizar el catálogo en el futuro: `npm run menu:extraer`, `npm run menu:sql` y volver a ejecutar la 003
-(no duplica productos y respeta la disponibilidad que haya definido el administrador).
+Para actualizar la carta en el futuro: `npm run menu:extraer` → `npm run menu:sql` → ejecutar de nuevo
+`seed_carta_real.sql` (no duplica y respeta la disponibilidad que haya puesto el administrador).
 
 ### 2. Autenticación (Supabase → Authentication)
 
-1. **Users → Add user**: correo y contraseña segura, *Auto Confirm User*. Después, en SQL Editor:
+1. Crear el usuario administrador (*Users → Add user*, *Auto Confirm*) y registrarlo:
    ```sql
    insert into public.administradores (user_id, nombre)
    select id, 'Administrador' from auth.users where email = 'tu-correo@ejemplo.com';
    ```
-2. **Sign In / Providers → desactiva «Allow new users to sign up»**.
-3. **URL Configuration**: *Site URL* = la URL de Vercel; *Redirect URLs* = solo esa URL y
-   `http://localhost:5173` (no uses comodines amplios).
-4. **Rate Limits**: deja activos los límites de inicio de sesión (protección contra fuerza bruta en el servidor).
-5. Recomendado: **JWT expiry** de 600–900 s (ver «Manejo de tokens»).
+2. Desactivar **Allow new users to sign up**.
+3. *URL Configuration*: Site URL = `https://konys-reservas-app.vercel.app`; Redirect URLs = esa URL y `http://localhost:5173`.
+4. Dejar activos los *Rate Limits* de inicio de sesión. Recomendado: *JWT expiry* de 600–900 s.
 
 ### 3. Variables de entorno
 
@@ -91,18 +102,18 @@ Para actualizar el catálogo en el futuro: `npm run menu:extraer`, `npm run menu
 cp .env.example .env
 ```
 
-| Variable | Dónde se obtiene |
-|---|---|
-| `SUPABASE_URL` | Project Settings → API → Project URL |
-| `SUPABASE_PUBLISHABLE_KEY` | Project Settings → API Keys → *Publishable key* (o *anon public*) |
-| `ADMIN_EMAIL` | Correo del administrador del paso 2 |
-| `CONTACTO_WHATSAPP`, `CONTACTO_INSTAGRAM` | Opcionales (pie de página) |
+| Variable | Dónde se obtiene | Dónde va |
+|---|---|---|
+| `SUPABASE_URL` | Project Settings → API → Project URL | `.env` y Vercel |
+| `SUPABASE_PUBLISHABLE_KEY` | Project Settings → API Keys → *Publishable key* (o *anon public*) | `.env` y Vercel |
+| `CONTACTO_WHATSAPP`, `CONTACTO_INSTAGRAM` | Opcionales (pie de página) | `.env` y Vercel |
+| `ADMIN_EMAIL_PRUEBAS`, `ADMIN_PASSWORD_PRUEBAS` | Credenciales del panel **solo para las pruebas Selenium** | Variables de entorno de tu terminal, **nunca** en archivos |
 
-Nunca uses la clave `service_role` / `sb_secret_…`: el script se niega a generar la configuración si la detecta.
+`ADMIN_EMAIL` ya no existe: el panel pide correo y contraseña, así el correo del administrador no viaja en la
+configuración pública. Nunca uses la clave `service_role` / `sb_secret_…`: el script se niega a generar la
+configuración si la detecta.
 
-### 4. Ejecutar localmente
-
-Requiere Node.js 18+.
+### 4. Ejecutar localmente (Node.js 18+)
 
 ```bash
 npm install
@@ -112,85 +123,107 @@ npm install
 npm run dev
 ```
 
-Abre <http://localhost:5173> (panel en `/admin`, consulta de reservas en `/mi-reserva`).
+Abre <http://localhost:5173>. Si todavía no hay `.env`, el servidor sirve una configuración vacía (sin errores 404)
+y la página avisa qué falta configurar.
 
 ## Pruebas
+
+### Node (lógica y base de datos)
 
 ```bash
 npm test
 ```
 
-44 pruebas: lógica de disponibilidad, validaciones, control de inactividad, CSP y las migraciones SQL reales
-sobre PostgreSQL embebido (solapamientos, cancelaciones, capacidad, turnos, catálogo, RLS por rol).
+48 pruebas: disponibilidad, validaciones, control de inactividad, CSP y las migraciones SQL reales sobre PostgreSQL
+embebido (solapamientos, cancelaciones, capacidad, turnos, carta real, horarios, reversión y RLS por rol).
+
+### Selenium (recorridos en Chrome)
 
 ```bash
 py -m pip install -r pruebas/requirements.txt
 ```
 
 ```bash
-py -X utf8 tests/selenium/ejecutar.py
+py pruebas/pruebas_formulario.py --rapido --oculto
 ```
 
-31 casos en Chrome (funcionales, seguridad, inactividad y consola). Usan un Supabase **local** de pruebas, nunca
-la base real; ver [`docs/INFORME_PRUEBAS_SELENIUM.md`](docs/INFORME_PRUEBAS_SELENIUM.md).
+(o doble clic en `ejecutar_pruebas.bat`). Genera un PDF en `pruebas/reportes/` con portada, resumen, detalle y capturas.
+
+- Con `.env` (o `--real`) prueba contra **Supabase real**; con `--local` (o sin `.env`) usa una copia local con las
+  mismas migraciones y no toca la base real.
+- Para las pruebas del panel, define antes `ADMIN_EMAIL_PRUEBAS` y `ADMIN_PASSWORD_PRUEBAS`
+  (`set ADMIN_EMAIL_PRUEBAS=...` en cmd). Sin ellas salen **OMITIDAS**.
+- Los datos que crean se llaman «PRUEBA SELENIUM» y se borran al terminar cada prueba, aunque falle.
+
+| Grupo | Qué se prueba |
+|---|---|
+| Carga de páginas | Título, estilos, datos de Supabase y página activa en las 6 páginas |
+| Navegación | Menú entre páginas; la consulta rápida abre Mesas con los datos |
+| Mesas | Zona, capacidad y estado; filtros |
+| Reserva | Flujo completo verificado en Supabase |
+| Validaciones | Nombre vacío, personas = 0, capacidad, contacto inválido, sin hora (sin guardar nada) |
+| Disponibilidad | Horario ocupado; doble reserva simultánea |
+| Carta | Categorías reales, solo platos reales/disponibles, buscador, imágenes |
+| Administración | Login incorrecto/correcto, acceso sin sesión, mesas, filtros de reservas, carta, cerrar sesión y «Atrás» |
+| Seguridad | Inactividad (aviso y cierre), valor 300000, JWT fuera de la URL, XSS, usuario sin permisos, varias pestañas |
+| Responsive | 375 px sin desbordamiento |
+| Consola | Cero errores y cero advertencias en todo el recorrido |
+
+Último resultado (base local): **37 aprobadas, 0 fallidas, 0 omitidas** (`docs/INFORME_PRUEBAS_SELENIUM.md`).
 
 ## Seguridad
 
-### Autorización (lo que realmente protege los datos)
+### Autorización
 - **RLS en todas las tablas.** El público solo lee mesas activas, horarios activos, categorías y platos disponibles.
-- **Reservas:** el público no puede leer, insertar ni modificar la tabla. Solo usa funciones `security definer`:
-  `crear_reserva()` (valida todo), `ocupacion()` (franjas sin datos personales), `consultar_reserva()` y
-  `cancelar_reserva()` (requieren código **y** nombre; nunca devuelven el teléfono).
-- **Panel:** Supabase Auth + tabla `administradores` + función `es_admin()` en cada política. Un usuario
-  autenticado que no sea administrador no puede leer ni modificar nada (probado con solicitudes reales).
-- **Clientes no modifican precios ni productos**: `anon` no tiene permisos de escritura en ninguna tabla.
-- **Imágenes:** bucket `imagenes` de solo lectura pública; subir o borrar requiere ser administrador.
+- **Reservas:** el público no puede leer, insertar ni modificar la tabla; solo usa funciones `security definer`
+  (`crear_reserva`, `ocupacion`, `consultar_reserva`, `cancelar_reserva`) que validan todo y nunca devuelven el teléfono.
+- **Panel:** Supabase Auth + tabla `administradores` + `es_admin()` en cada política. Un usuario autenticado que no sea
+  administrador no puede leer ni modificar nada (probado con solicitudes reales).
+- **Imágenes:** bucket `imagenes` de lectura pública; subir o borrar requiere ser administrador.
 
-### Manejo de tokens
-- El acceso usa correo + contraseña con `supabase-js` (`signInWithPassword`): los tokens llegan en el cuerpo de
-  la respuesta HTTPS, **nunca en la URL**.
-- `flowType: 'pkce'` y `detectSessionInUrl: false`: aunque alguien abra `/admin#access_token=…`, la app no lo usa
-  y además **borra** de la barra de direcciones cualquier `access_token`, `refresh_token`, `code` o `token`.
-- La sesión se guarda en **`sessionStorage`** (clave `konys-admin-sesion`): desaparece al cerrar la pestaña. **No
-  son cookies HttpOnly**: el JavaScript de la propia página puede leerla; por eso la CSP solo permite scripts
-  propios y de `cdn.jsdelivr.net` (supabase-js).
-- Al abrir el panel se llama a `auth.getUser()`, que valida el token **en el servidor** de Supabase Auth. Un token
-  manipulado, vencido o de una sesión cerrada se rechaza y se borra.
-- Cerrar sesión llama a `signOut({ scope: 'global' })`: Supabase revoca la sesión y todos sus refresh tokens.
-  Igual que en cualquier JWT sin estado, el *access token* ya emitido sigue siendo aceptado por la API REST hasta
-  su vencimiento; por eso se recomienda un *JWT expiry* corto (paso 2.5). La aplicación ya no lo conserva.
+### «Token de seguridad en la URL»: interpretación implementada
+
+El profesor lo mencionó sin más detalle. Implementamos la interpretación más defendible:
+
+1. **El token de sesión (JWT) nunca aparece en la URL**, ni en la consulta (`?`) ni en el fragmento (`#`): se inicia
+   sesión con correo y contraseña y el cliente usa `flowType: 'pkce'` y `detectSessionInUrl: false`. Si alguien abre
+   `/admin#access_token=…`, la app no lo usa y lo **borra** de la barra de direcciones.
+2. **Ninguna ruta del panel se abre sin iniciar sesión:** `admin.html#mesas` sin sesión muestra el acceso; además, la base de
+   datos rechaza cualquier operación sin un token de administrador válido (la ruta oculta no es la protección).
+3. **Tras cerrar sesión o expirar** el token no queda ni en `localStorage` ni en la URL: la sesión vive en `sessionStorage`
+   (se borra al salir y al cerrar la pestaña), `signOut` revoca la sesión en Supabase y el panel tiene `Cache-Control: no-store`,
+   así que «Atrás» no vuelve a mostrarlo.
+
+> ⚠️ **Por confirmar con el profesor** si con «token de seguridad en la URL» se refería a otra cosa (por ejemplo, enlaces
+> firmados para que el cliente vea su reserva). Hoy el cliente consulta su reserva con código + nombre en `mi-reserva.html`.
+
+Detalle técnico: la sesión **no** usa cookies HttpOnly (supabase-js en el navegador guarda la sesión en `sessionStorage`);
+la CSP solo permite scripts propios y de `cdn.jsdelivr.net`. Un *access token* ya emitido sigue siendo válido para la API
+hasta que vence, como cualquier JWT; por eso se recomienda un *JWT expiry* corto.
 
 ### Cierre por inactividad (5 minutos)
-- `js/admin/inactividad.js`: `TIEMPO_INACTIVIDAD_MS = 300000`. Ratón, teclado, clic, rueda, desplazamiento y toque
-  reinician el contador. Al vencer: `signOut` real, vuelta al acceso con «Tu sesión se cerró por inactividad», panel
-  vaciado y URL sin la sección.
-- Antes de cada clic, envío o cambio dentro del panel se comprueba que la sesión no haya vencido (por ejemplo, si el
-  equipo estuvo suspendido); recargar la página tampoco reinicia el contador.
-- Solo afecta al panel, no al sitio público.
-- **Pruebas:** en `localhost` se puede acortar con `?inactividad=<segundos>` (nunca más de 5 min). En cualquier otro
-  dominio el parámetro se ignora.
+- `js/admin/inactividad.js`: `INACTIVIDAD_MS = 300000`. Ratón, teclado, clic, rueda, desplazamiento y toque reinician el contador.
+- A los **4 minutos** aparece «¿Sigues ahí?» con el botón **Seguir conectado**.
+- A los 5 minutos: `signOut` real, se borra la sesión guardada, vuelve el acceso con «Tu sesión se cerró por inactividad»,
+  el panel queda vacío y la URL sin la sección.
+- **Varias pestañas:** la actividad en una mantiene vivas las demás y cerrar sesión (o expirar) en una cierra todas
+  (evento `storage`; en `localStorage` solo se guarda una marca de tiempo, nunca el token).
+- Solo en `localhost`/`127.0.0.1` se puede acortar con `?inactividad=<segundos>` para las pruebas.
 
 ### Otras medidas
-- **CSP** y cabeceras (`X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS) en `vercel.json`,
-  generadas desde `scripts/seguridad-http.mjs` y verificadas por una prueba.
-- **XSS:** todo texto dinámico pasa por `esc()` antes de insertarse en el HTML.
-- **Inyección SQL:** no hay SQL construido en el navegador; PostgREST y las funciones usan parámetros.
-- **Validación doble:** formularios en el navegador y restricciones/funciones en la base.
+- **CSP** y cabeceras de seguridad en `vercel.json` (generadas desde `scripts/seguridad-http.mjs` y verificadas por una prueba);
+  `Cache-Control: no-store` en el panel.
+- **XSS:** todo texto dinámico pasa por `esc()` antes de insertarse en el HTML (revisado en `admin/*.js`, `ui.js`, `reserva.js`
+  y las páginas públicas; la prueba Selenium «XSS» lo verifica).
 - **Intentos de acceso:** tras 5 fallos el formulario se bloquea 60 s (además de los límites de Supabase Auth).
-- **Secretos:** `.env` y `js/config.js` están en `.gitignore`; la clave publishable es pública por diseño.
+- **Secretos:** `.env` y `js/config.js` están en `.gitignore`.
 
 ## Despliegue en Vercel
 
-1. Importar el repositorio (framework *Other*). `vercel.json` define el build, las URL limpias y las cabeceras.
-2. *Settings → Environment Variables*: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `ADMIN_EMAIL`.
-3. Añadir la URL de Vercel en Supabase → Authentication → URL Configuration.
-4. Vercel sirve todo por HTTPS; HSTS obliga al navegador a mantenerlo.
-
-## Decisiones donde el diseño o la fuente no lo definían
-
-- **Acceso con solo contraseña** (como en Figma): el correo viene de `ADMIN_EMAIL`.
-- **Carta:** la fuente oficial es el menú de Konys en Clubify; ver [`docs/CATALOGO_KONYS.md`](docs/CATALOGO_KONYS.md).
-- **Mi reserva:** el código de 8 caracteres de la confirmación + el nombre permiten consultar y cancelar.
+1. *Settings → Git*: la rama de producción debe ser `main` (el 7/11/2026 el sitio publicado era una versión antigua).
+2. *Settings → Environment Variables*: `SUPABASE_URL` y `SUPABASE_PUBLISHABLE_KEY`. El build (`node scripts/generar-config.mjs`)
+   genera `js/config.js` en cada despliegue.
+3. `vercel.json` define URL limpias (`/carta`, `/admin`…), cabeceras de seguridad y HTTPS (HSTS).
 
 ## Fuera del alcance
 
