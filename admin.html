@@ -28,9 +28,13 @@
       <div class="acceso__caja">
         <p class="antetitulo">Konys Pizza</p>
         <h1>Panel de administración</h1>
-        <p>Ingresa la contraseña para gestionar mesas, horarios, reservas y carta.</p>
+        <p>Ingresa tu correo y contraseña para gestionar mesas, horarios, reservas y carta.</p>
         <form class="tarjeta-acceso" id="form-acceso" novalidate>
           <div id="acceso-alerta"></div>
+          <div class="campo">
+            <label for="correo">Correo</label>
+            <input class="entrada" id="correo" name="correo" type="email" autocomplete="username" inputmode="email" required>
+          </div>
           <div class="campo">
             <label for="clave">Contraseña</label>
             <div class="campo-clave">

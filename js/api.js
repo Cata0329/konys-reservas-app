@@ -143,7 +143,7 @@ export async function iniciarSesion(email, password) {
   }
   if (respuesta.error) {
     if (respuesta.error.status === 400 || /invalid/i.test(respuesta.error.message)) {
-      throw new ErrorApi('Contraseña incorrecta. Revísala e inténtalo de nuevo.', 'CREDENCIALES');
+      throw new ErrorApi('Correo o contraseña incorrectos.', 'CREDENCIALES');
     }
     throw traducirError(respuesta.error);
   }

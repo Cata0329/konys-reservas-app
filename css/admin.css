@@ -182,3 +182,13 @@ body.admin { background: var(--crema-panel); background-image: none; }
 @media (max-width: 860px) {
   .filtros--carta { grid-template-columns: 1fr; }
 }
+
+/* Aviso previo al cierre por inactividad */
+.aviso-inactividad {
+  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 150;
+  width: min(560px, calc(100vw - 32px)); display: flex; gap: 14px; align-items: center;
+  background: var(--aviso-fondo); color: var(--aviso); border: 1.5px solid #C9A227; border-radius: 16px;
+  padding: 16px 18px; box-shadow: var(--sombra);
+}
+.aviso-inactividad p { color: var(--carbon); font-size: 14px; margin-top: 2px; }
+.aviso-inactividad .btn { margin-left: auto; flex: none; }

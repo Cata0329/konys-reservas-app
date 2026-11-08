@@ -10,7 +10,7 @@
 //  - limita los intentos de acceso fallidos desde el navegador;
 //  - cierra la sesión de verdad tras 5 minutos sin actividad.
 import * as api from '../api.js';
-import { supabase, config, errorConfiguracion } from '../supabase.js';
+import { supabase, errorConfiguracion } from '../supabase.js';
 import { $, $$, esc, icono, alerta, pizza, botonCargando, marcarCampo } from '../ui.js';
 import { crearVigilante } from './inactividad.js';
 import * as resumen from './resumen.js';
@@ -34,7 +34,10 @@ const SECCIONES = {
 const MAX_INTENTOS = 5;
 const BLOQUEO_MS = 60 * 1000;
 const CLAVE_INTENTOS = 'konys-admin-intentos';
+// En localStorage (compartido entre pestañas) solo se guardan una marca de tiempo
+// de actividad y el aviso de cierre: NUNCA tokens. La sesión vive en sessionStorage.
 const CLAVE_ACTIVIDAD = 'konys-admin-ultima-actividad';
+const CLAVE_CIERRE = 'konys-admin-cierre';
 
 let dentro = false;
 let temporizadorBloqueo = null;
@@ -42,13 +45,15 @@ let ultimaEscritura = 0;
 
 const vigilante = crearVigilante({
   alExpirar: () => salir('inactividad'),
-  // Se guarda la última actividad (como mucho cada 5 s) para que recargar
-  // la página no reinicie el contador.
+  // Se guarda la última actividad (como mucho cada 2 s) para que recargar la
+  // página no reinicie el contador y las demás pestañas del panel la adopten.
   alActividad: (momento) => {
-    if (momento - ultimaEscritura < 5000) return;
+    if (momento - ultimaEscritura < 2000) return;
     ultimaEscritura = momento;
-    guardar(CLAVE_ACTIVIDAD, String(momento));
+    guardarCompartido(CLAVE_ACTIVIDAD, String(momento));
   },
+  alAvisar: mostrarAvisoInactividad,
+  alCancelarAviso: ocultarAvisoInactividad,
 });
 
 limpiarTokensDeUrl();
@@ -81,11 +86,22 @@ async function iniciar() {
     if (evento === 'SIGNED_OUT' && dentro) salir('expirada');
   });
   window.addEventListener('konys:sesion-invalida', () => { if (dentro) salir('expirada'); });
+  // Varias pestañas: la actividad en una mantiene vivas las demás, y cerrar
+  // sesión (o expirar) en una cierra todas.
+  window.addEventListener('storage', (e) => {
+    if (e.key === CLAVE_ACTIVIDAD && e.newValue) vigilante.sincronizar(Number(e.newValue));
+    if (e.key === CLAVE_CIERRE && e.newValue && dentro) {
+      const { motivo } = JSON.parse(e.newValue);
+      salir(motivo, { propagar: false });
+    }
+  });
+  // Si el navegador restaura la página desde su caché al pulsar «Atrás», se vuelve a verificar todo.
+  window.addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
 
   try {
     const usuario = await api.usuarioVerificado();
     if (!usuario) { mostrarAcceso(); return; }
-    const ultima = Number(leer(CLAVE_ACTIVIDAD));
+    const ultima = Number(leerCompartido(CLAVE_ACTIVIDAD));
     if (ultima && Date.now() - ultima >= vigilante.limiteMs) { await salir('inactividad'); return; }
     if (await api.esAdministrador()) entrar();
     else { await api.cerrarSesion(); mostrarAcceso(alerta('error', 'Esta cuenta no tiene permisos de administración.')); }
@@ -139,16 +155,21 @@ function mostrarAcceso(mensaje = '') {
   $('#acceso').hidden = false;
   $('#acceso-alerta').innerHTML = mensaje;
   $('#clave').value = '';
+  ocultarAvisoInactividad();
   actualizarBloqueo();
-  $('#clave').focus();
+  $($('#correo').value ? '#clave' : '#correo').focus();
 }
 
-/** Cierra la sesión en Supabase y vuelve a la pantalla de acceso. */
-async function salir(motivo) {
+/**
+ * Cierra la sesión en Supabase, borra la sesión guardada y vuelve a la pantalla
+ * de acceso. Con propagar=true avisa a las demás pestañas del panel.
+ */
+async function salir(motivo, { propagar = true } = {}) {
   const estabaDentro = dentro;
   dentro = false;
   vigilante.detener();
-  borrar(CLAVE_ACTIVIDAD);
+  borrarCompartido(CLAVE_ACTIVIDAD);
+  if (propagar) guardarCompartido(CLAVE_CIERRE, JSON.stringify({ motivo, momento: Date.now() }));
   // Se quita la sección de la URL: una dirección antigua no reabre el panel.
   history.replaceState(null, '', `${location.pathname}${location.search}`);
   const mensajes = {
@@ -169,22 +190,24 @@ function describirTiempo(ms) {
 
 async function ingresar() {
   const form = $('#form-acceso');
+  const correo = $('#correo').value.trim();
   const clave = $('#clave').value;
   $('#acceso-alerta').innerHTML = '';
   if (actualizarBloqueo()) return;
-  if (!clave) {
-    marcarCampo(form, 'clave', 'Escribe la contraseña para ingresar.');
-    $('#clave').focus();
-    return;
-  }
-  marcarCampo(form, 'clave', '');
-  if (!config.ADMIN_EMAIL) {
-    $('#acceso-alerta').innerHTML = alerta('error', 'Falta ADMIN_EMAIL en la configuración.', 'Revisa el archivo .env y ejecuta "npm run config".');
+  // El correo se pide en el formulario: no viaja en la configuración pública del sitio.
+  const errores = {
+    correo: !correo ? 'Escribe tu correo.' : (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(correo) ? '' : 'Escribe un correo válido.'),
+    clave: clave ? '' : 'Escribe la contraseña para ingresar.',
+  };
+  marcarCampo(form, 'correo', errores.correo);
+  marcarCampo(form, 'clave', errores.clave);
+  if (errores.correo || errores.clave) {
+    $(errores.correo ? '#correo' : '#clave').focus();
     return;
   }
   const restaurar = botonCargando($('#btn-ingresar'), 'Verificando…');
   try {
-    await api.iniciarSesion(config.ADMIN_EMAIL, clave);
+    await api.iniciarSesion(correo, clave);
     if (!(await api.esAdministrador())) {
       await api.cerrarSesion();
       throw new api.ErrorApi('Esta cuenta no tiene permisos de administración.', 'SIN_PERMISO');
@@ -196,8 +219,8 @@ async function ingresar() {
     restaurar();
     const incorrecta = e.codigo === 'CREDENCIALES';
     if (incorrecta) registrarFallo();
-    $('#acceso-alerta').innerHTML = alerta('error', incorrecta ? 'Contraseña incorrecta.' : 'No pudimos ingresar.',
-      incorrecta ? 'Revísala e inténtalo de nuevo.' : e.message);
+    $('#acceso-alerta').innerHTML = alerta('error', incorrecta ? 'Correo o contraseña incorrectos.' : 'No pudimos ingresar.',
+      incorrecta ? 'Revísalos e inténtalo de nuevo.' : e.message);
     $('#clave').setAttribute('aria-invalid', 'true');
     $('#clave').select();
     actualizarBloqueo();
@@ -241,7 +264,7 @@ function entrar() {
   $('#panel-admin').hidden = false;
   $('#clave').value = '';
   $('#clave').removeAttribute('aria-invalid');
-  guardar(CLAVE_ACTIVIDAD, String(Date.now()));
+  guardarCompartido(CLAVE_ACTIVIDAD, String(Date.now()));
   vigilante.iniciar();
   mostrarSeccion();
 }
@@ -271,7 +294,36 @@ async function mostrarSeccion() {
   }
 }
 
-// sessionStorage puede no estar disponible (modo privado estricto): se ignora con seguridad.
+/** Aviso un minuto antes del cierre por inactividad, con opción de seguir conectado. */
+function mostrarAvisoInactividad(restanteMs) {
+  let aviso = $('#aviso-inactividad');
+  if (!aviso) {
+    aviso = document.createElement('div');
+    aviso.id = 'aviso-inactividad';
+    aviso.className = 'aviso-inactividad';
+    aviso.setAttribute('role', 'alertdialog');
+    aviso.setAttribute('aria-live', 'assertive');
+    aviso.setAttribute('aria-labelledby', 'aviso-inactividad-titulo');
+    $('#panel-admin').append(aviso);
+  }
+  const segundos = Math.ceil(restanteMs / 1000);
+  aviso.innerHTML = `${icono('reloj')}<div><strong id="aviso-inactividad-titulo">¿Sigues ahí?</strong>
+    <p>Por seguridad, tu sesión se cerrará en ${segundos} segundos si no hay actividad.</p></div>
+    <button type="button" class="btn btn--primario btn--pequeno" id="seguir-conectado">Seguir conectado</button>`;
+  aviso.hidden = false;
+  // Cualquier clic ya cuenta como actividad; el botón solo devuelve el foco al panel.
+  $('#seguir-conectado').addEventListener('click', () => $('#principal').focus({ preventScroll: true }));
+}
+
+function ocultarAvisoInactividad() {
+  const aviso = $('#aviso-inactividad');
+  if (aviso) aviso.hidden = true;
+}
+
+// sessionStorage/localStorage pueden no estar disponibles (modo privado estricto): se ignora con seguridad.
 function leer(clave) { try { return sessionStorage.getItem(clave); } catch { return null; } }
 function guardar(clave, valor) { try { sessionStorage.setItem(clave, valor); } catch { /* sin almacenamiento */ } }
 function borrar(clave) { try { sessionStorage.removeItem(clave); } catch { /* sin almacenamiento */ } }
+function leerCompartido(clave) { try { return localStorage.getItem(clave); } catch { return null; } }
+function guardarCompartido(clave, valor) { try { localStorage.setItem(clave, valor); } catch { /* sin almacenamiento */ } }
+function borrarCompartido(clave) { try { localStorage.removeItem(clave); } catch { /* sin almacenamiento */ } }

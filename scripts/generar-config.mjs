@@ -39,19 +39,18 @@ function esClaveSecreta(clave) {
 // --pruebas: apunta al Supabase local de tests/soporte/supabase-local.mjs (nunca a la base real).
 const PRUEBAS = process.argv.includes('--pruebas');
 const env = PRUEBAS
-  ? { SUPABASE_URL: 'http://localhost:54321', SUPABASE_PUBLISHABLE_KEY: 'clave-publica-local', ADMIN_EMAIL: process.env.ADMIN_EMAIL_PRUEBA || 'admin@konys.test' }
+  ? { SUPABASE_URL: 'http://localhost:54321', SUPABASE_PUBLISHABLE_KEY: 'clave-publica-local' }
   : { ...(await leerEnv()), ...process.env };
 const valor = (nombre) => (env[nombre] ?? '').trim();
 
 const config = {
   SUPABASE_URL: valor('SUPABASE_URL'),
   SUPABASE_PUBLISHABLE_KEY: valor('SUPABASE_PUBLISHABLE_KEY') || valor('SUPABASE_ANON_KEY'),
-  ADMIN_EMAIL: valor('ADMIN_EMAIL'),
   CONTACTO_WHATSAPP: valor('CONTACTO_WHATSAPP'),
   CONTACTO_INSTAGRAM: valor('CONTACTO_INSTAGRAM'),
 };
 
-const faltantes = ['SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY', 'ADMIN_EMAIL'].filter((k) => !config[k]);
+const faltantes = ['SUPABASE_URL', 'SUPABASE_PUBLISHABLE_KEY'].filter((k) => !config[k]);
 if (faltantes.length) {
   console.warn(`⚠  Faltan variables: ${faltantes.join(', ')}. El sitio mostrará un aviso de configuración.`);
 }

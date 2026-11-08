@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { TIEMPO_INACTIVIDAD_MS, tiempoInactividad, crearVigilante } from '../js/admin/inactividad.js';
+import { INACTIVIDAD_MS, TIEMPO_INACTIVIDAD_MS, tiempoInactividad, crearVigilante, margenAviso } from '../js/admin/inactividad.js';
 import { construirCsp } from '../scripts/seguridad-http.mjs';
 import { validarPlato, validarCategoria } from '../js/validaciones.js';
 import { formatoPrecio } from '../js/formato.js';
@@ -11,7 +11,9 @@ import { formatoPrecio } from '../js/formato.js';
 const ubicacion = (url) => new URL(url);
 
 test('inactividad: el valor de producción es exactamente 5 minutos', () => {
-  assert.equal(TIEMPO_INACTIVIDAD_MS, 300000);
+  assert.equal(INACTIVIDAD_MS, 300000);
+  assert.equal(TIEMPO_INACTIVIDAD_MS, INACTIVIDAD_MS);
+  assert.equal(margenAviso(INACTIVIDAD_MS), 60000, 'el aviso aparece a los 4 minutos');
   assert.equal(tiempoInactividad(ubicacion('https://konys.vercel.app/admin')), 300000);
 });
 
@@ -111,4 +113,41 @@ test('validación de categorías', () => {
   assert.ok(validarCategoria({ nombre: 'A', disponible_desde: '12:00', disponible_hasta: '' }, false).disponible_hasta);
   assert.ok(validarCategoria({ nombre: 'A', disponible_desde: '14:30', disponible_hasta: '12:00' }, false).disponible_hasta);
   assert.deepEqual(validarCategoria({ nombre: 'A', disponible_desde: '12:00', disponible_hasta: '14:30' }, false), {});
+});
+
+test('inactividad: aviso un minuto antes; la actividad lo cancela', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const ventana = ventanaFalsa();
+  const eventos = [];
+  const v = crearVigilante({
+    limiteMs: 300000, ventana, reloj: () => Date.now(),
+    alAvisar: (restante) => eventos.push(['aviso', restante]), alCancelarAviso: () => eventos.push(['cancelado']),
+    alExpirar: () => eventos.push(['expiro']),
+  });
+  v.iniciar();
+  t.mock.timers.tick(239000);
+  assert.deepEqual(eventos, []);
+  t.mock.timers.tick(1000); // 4 min
+  assert.deepEqual(eventos, [['aviso', 60000]]);
+  ventana.emitir('click'); // «Seguir conectado»
+  assert.deepEqual(eventos.at(-1), ['cancelado']);
+  t.mock.timers.tick(240000);
+  assert.equal(eventos.filter((e) => e[0] === 'aviso').length, 2, 'vuelve a avisar tras otros 4 min');
+  t.mock.timers.tick(60000);
+  assert.deepEqual(eventos.at(-1), ['expiro']);
+});
+
+test('inactividad: la actividad de otra pestaña mantiene viva esta (evento storage)', async (t) => {
+  t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+  const ventana = ventanaFalsa();
+  let expiro = false;
+  const v = crearVigilante({ limiteMs: 10000, ventana, reloj: () => Date.now(), alExpirar: () => { expiro = true; } });
+  v.iniciar();
+  t.mock.timers.tick(8000);
+  v.sincronizar(Date.now()); // otra pestaña registró actividad
+  t.mock.timers.tick(8000);
+  assert.equal(expiro, false);
+  v.sincronizar(Date.now() - 60000); // una marca vieja no alarga la sesión
+  t.mock.timers.tick(2000);
+  assert.equal(expiro, true);
 });
