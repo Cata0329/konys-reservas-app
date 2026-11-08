@@ -262,7 +262,7 @@ em.acento, .acento { font-style: italic; color: var(--acento-texto); }
 .esqueleto span:nth-child(3) { width: 45%; }
 @keyframes brillo { to { background-position: -200% 0; } }
 
-.notificaciones { position: fixed; right: 16px; bottom: 16px; display: grid; gap: 10px; z-index: 200; }
+.notificaciones { position: fixed; right: 16px; bottom: 16px; display: grid; gap: 10px; z-index: 200; pointer-events: none; } /* no tapan los controles */
 .notificacion {
   display: flex; gap: 10px; align-items: center; padding: 12px 16px; border-radius: 14px; box-shadow: var(--sombra);
   font-weight: 600; animation: entrar .2s ease-out; max-width: min(420px, calc(100vw - 32px));
@@ -638,3 +638,25 @@ section[id], [id='contacto'] { scroll-margin-top: 92px; }
 .tarjeta-plato__arte--foto img { position: absolute; inset: 0; }
 .tarjeta-plato__titulo { flex-wrap: wrap; row-gap: 4px; }
 .tarjeta-plato__titulo h3 { flex: 1 1 60%; font-size: 20px; }
+
+/* =====================================================================
+   Páginas separadas: encabezado/pie compartidos, mesas, carta y contacto
+   ===================================================================== */
+.cabecera:empty { min-height: 84px; }            /* reserva el espacio antes de pintar el encabezado */
+.pie:empty { min-height: 320px; }
+.nav a[aria-current='page'] { border-bottom-color: var(--carbon); font-weight: 700; }
+.pie .pie__titulo { font-size: 18px; color: var(--limon); margin-bottom: 14px; }
+.pie__enlaces { display: inline-flex; flex-wrap: wrap; gap: 8px 24px; }
+.consulta--mesas { border: 1.5px solid var(--carbon); margin-bottom: 32px; max-width: 760px; }
+.consulta--mesas .consulta__titulo { font-size: 24px; margin-bottom: 20px; }
+.buscador-carta { max-width: 420px; margin-bottom: 20px; }
+.buscador-carta__estado { font-size: 14px; color: var(--texto-suave); margin-top: 8px; min-height: 1.5em; }
+.contacto { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+.contacto__bloque h2 { font-size: 28px; margin-bottom: 16px; }
+.contacto__dato { display: flex; gap: 10px; align-items: flex-start; font-size: 18px; }
+.tabla-horario { width: 100%; border-collapse: collapse; }
+.tabla-horario th, .tabla-horario td { text-align: left; padding: 10px 0; border-bottom: 1px solid var(--borde-suave); vertical-align: top; }
+.tabla-horario th { width: 40%; font-weight: 600; }
+@media (max-width: 900px) {
+  .contacto { grid-template-columns: 1fr; }
+}

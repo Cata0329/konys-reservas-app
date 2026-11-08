@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mesas · Konys Pizza</title>
+  <meta name="description" content="Mesas de Konys Pizza en el salón y la terraza: consulta cuáles están libres y reserva sin crear cuenta.">
+  <meta name="theme-color" content="#173F35">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%23173F35'/%3E%3Ctext x='16' y='23' font-family='Georgia' font-style='italic' font-weight='700' font-size='20' fill='%23E9D56B' text-anchor='middle'%3EK%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,700;1,9..144,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <script type="module" src="js/pagina-mesas.js"></script>
+</head>
+<body>
+  <a class="saltar" href="#contenido">Saltar al contenido</a>
+  <div id="aviso-config"></div>
+  <header id="cabecera" class="cabecera"></header>
+
+  <main id="contenido">
+    <!-- Mesas -->
+    <section class="seccion" id="mesas" aria-labelledby="titulo-mesas">
+      <div class="contenedor">
+        <div class="seccion__cabecera">
+          <p class="antetitulo">Nuestras mesas</p>
+          <h1 class="titulo-seccion" id="titulo-mesas" tabindex="-1">Salón cálido o terraza al aire libre</h1>
+          <p class="entradilla" id="mesas-contexto" aria-live="polite">Cargando disponibilidad…</p>
+        </div>
+        <form class="consulta consulta--mesas" id="form-consulta" novalidate>
+          <h2 class="consulta__titulo">Consulta disponibilidad</h2>
+          <div class="consulta__fila">
+            <div class="campo">
+              <label for="consulta-fecha">Fecha</label>
+              <select class="selector" id="consulta-fecha" name="fecha" disabled><option>Cargando…</option></select>
+            </div>
+            <div class="campo">
+              <label for="consulta-hora">Hora</label>
+              <select class="selector" id="consulta-hora" name="hora" disabled><option>Cargando…</option></select>
+            </div>
+          </div>
+          <div class="campo">
+            <label for="consulta-personas">Personas</label>
+            <select class="selector" id="consulta-personas" name="personas">
+              <option value="1">1 persona</option>
+              <option value="2" selected>2 personas</option>
+              <option value="3">3 personas</option>
+              <option value="4">4 personas</option>
+              <option value="5">5 personas</option>
+              <option value="6">6 personas</option>
+              <option value="8">7 u 8 personas</option>
+              <option value="12">9 a 12 personas</option>
+            </select>
+          </div>
+          <button class="btn btn--verde btn--bloque" type="submit" id="btn-consulta" disabled>Ver mesas disponibles</button>
+          <div class="leyenda">
+            <span class="etiqueta etiqueta--exito"><span data-icono="check"></span>Libre</span>
+            <span class="etiqueta etiqueta--neutra"><span data-icono="x"></span>Ocupada</span>
+            <span id="leyenda-duracion">Cada reserva dura 60 min.</span>
+          </div>
+        </form>
+        <div class="filtros-mesas">
+          <div class="chips" role="group" aria-label="Filtrar por zona">
+            <span class="chips__etiqueta">Zona</span>
+            <button type="button" class="chip" data-zona="" aria-pressed="true"><span data-icono="check"></span>Todas</button>
+            <button type="button" class="chip" data-zona="salon" aria-pressed="false"><span data-icono="check"></span>Salón</button>
+            <button type="button" class="chip" data-zona="terraza" aria-pressed="false"><span data-icono="check"></span>Terraza</button>
+          </div>
+          <div class="chips" role="group" aria-label="Filtrar por número de personas">
+            <span class="chips__etiqueta">Somos</span>
+            <button type="button" class="chip" data-personas="0" aria-pressed="true"><span data-icono="check"></span>Cualquiera</button>
+            <button type="button" class="chip" data-personas="2" aria-pressed="false"><span data-icono="check"></span>2 personas</button>
+            <button type="button" class="chip" data-personas="4" aria-pressed="false"><span data-icono="check"></span>4 personas</button>
+            <button type="button" class="chip" data-personas="6" aria-pressed="false"><span data-icono="check"></span>6 personas</button>
+          </div>
+        </div>
+        <div class="planos" id="planos"></div>
+        <div id="mesas-lista">
+          <div class="esqueleto" aria-busy="true"><span></span><span></span><span></span></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer id="pie" class="pie"></footer>
+</body>
+</html>

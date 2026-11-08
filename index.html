@@ -11,27 +11,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,700;1,9..144,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
-  <script type="module" src="js/inicio.js"></script>
+  <script type="module" src="js/pagina-inicio.js"></script>
 </head>
 <body>
   <a class="saltar" href="#contenido">Saltar al contenido</a>
   <div id="aviso-config"></div>
-
-  <header class="cabecera" id="cabecera">
-    <div class="contenedor cabecera__fila">
-      <a href="#inicio" class="logo" aria-label="Konys Pizza, inicio"><span class="logo__marca">Konys</span><span class="logo__sello">PIZZA</span></a>
-      <nav class="nav" id="nav" aria-label="Principal">
-        <a href="#inicio">Inicio</a>
-        <a href="#mesas">Mesas</a>
-        <a href="#carta">Carta</a>
-        <a href="reservar.html">Reservar</a>
-        <a href="#contacto">Contacto</a>
-        <a href="mi-reserva.html">Mi reserva</a>
-      </nav>
-      <a class="btn btn--primario cabecera__cta" href="reservar.html">Reservar una mesa <span data-icono="flechaDerecha"></span></a>
-      <button class="cabecera__menu" type="button" aria-expanded="false" aria-controls="nav" aria-label="Abrir menú"><span data-icono="menu"></span></button>
-    </div>
-  </header>
+  <header id="cabecera" class="cabecera"></header>
 
   <main id="contenido">
     <!-- Portada -->
@@ -43,7 +28,7 @@
           <p class="portada__texto">Masa hecha a mano, queso fundido y buena compañía en la carrera 36 con calle 41. Elige tu mesa, tu fecha y tu hora: lo demás es disfrutar el momento.</p>
           <div class="portada__acciones">
             <a class="btn btn--primario" href="reservar.html">Reserva tu mesa <span data-icono="flechaDerecha"></span></a>
-            <a class="btn btn--secundario" href="#carta">Explorar la carta</a>
+            <a class="btn btn--secundario" href="carta.html">Explorar la carta</a>
           </div>
           <div class="datos-rapidos">
             <span><span data-icono="ubicacion"></span>Carrera 36 con calle 41, Bucaramanga</span>
@@ -114,51 +99,6 @@
       </div>
     </section>
 
-    <!-- Mesas -->
-    <section class="seccion" id="mesas" aria-labelledby="titulo-mesas">
-      <div class="contenedor">
-        <div class="seccion__cabecera">
-          <p class="antetitulo">Nuestras mesas</p>
-          <h2 class="titulo-seccion" id="titulo-mesas" tabindex="-1">Salón cálido o terraza al aire libre</h2>
-          <p class="entradilla" id="mesas-contexto" aria-live="polite">Cargando disponibilidad…</p>
-        </div>
-        <div class="filtros-mesas">
-          <div class="chips" role="group" aria-label="Filtrar por zona">
-            <span class="chips__etiqueta">Zona</span>
-            <button type="button" class="chip" data-zona="" aria-pressed="true"><span data-icono="check"></span>Todas</button>
-            <button type="button" class="chip" data-zona="salon" aria-pressed="false"><span data-icono="check"></span>Salón</button>
-            <button type="button" class="chip" data-zona="terraza" aria-pressed="false"><span data-icono="check"></span>Terraza</button>
-          </div>
-          <div class="chips" role="group" aria-label="Filtrar por número de personas">
-            <span class="chips__etiqueta">Somos</span>
-            <button type="button" class="chip" data-personas="0" aria-pressed="true"><span data-icono="check"></span>Cualquiera</button>
-            <button type="button" class="chip" data-personas="2" aria-pressed="false"><span data-icono="check"></span>2 personas</button>
-            <button type="button" class="chip" data-personas="4" aria-pressed="false"><span data-icono="check"></span>4 personas</button>
-            <button type="button" class="chip" data-personas="6" aria-pressed="false"><span data-icono="check"></span>6 personas</button>
-          </div>
-        </div>
-        <div class="planos" id="planos"></div>
-        <div id="mesas-lista">
-          <div class="esqueleto" aria-busy="true"><span></span><span></span><span></span></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Carta -->
-    <section class="seccion carta" id="carta" aria-labelledby="titulo-carta">
-      <div class="contenedor">
-        <div class="seccion__cabecera">
-          <p class="antetitulo">La carta</p>
-          <h2 class="titulo-seccion" id="titulo-carta">Para pedir con calma cuando llegues</h2>
-          <p class="entradilla">Carta informativa con platos y precios en pesos colombianos. Los pedidos se toman en la mesa.</p>
-        </div>
-        <div class="pestanas" role="tablist" aria-label="Categorías de la carta" id="pestanas"></div>
-        <div id="carta-lista" role="tabpanel" aria-live="polite">
-          <div class="esqueleto" aria-busy="true"><span></span><span></span><span></span></div>
-        </div>
-      </div>
-    </section>
-
     <!-- Llamado final -->
     <section class="seccion" aria-label="Reserva">
       <div class="contenedor">
@@ -174,39 +114,6 @@
     </section>
   </main>
 
-  <footer class="pie" id="contacto">
-    <div class="contenedor">
-      <div class="pie__grid">
-        <div>
-          <span class="logo"><span class="logo__marca">Konys</span></span>
-          <p class="pie__lema">La pizza más icónica de la ciudad.</p>
-        </div>
-        <div>
-          <h3>Visítanos</h3>
-          <address class="pie__direccion">Carrera 36 con calle 41<br>Bucaramanga, Santander<br>Colombia</address>
-        </div>
-        <div>
-          <h3>Horarios</h3>
-          <ul id="pie-horarios">
-            <li>Almuerzo: 12:30 p. m. – 2:30 p. m.</li>
-            <li>Noche: 5:00 p. m. – 11:00 p. m.</li>
-          </ul>
-        </div>
-        <div>
-          <h3>Servicios</h3>
-          <ul>
-            <li>Atención en el restaurante</li>
-            <li>Domicilios por nuestros canales actuales</li>
-            <li>Eventos</li>
-          </ul>
-          <div id="pie-contacto"></div>
-        </div>
-      </div>
-      <div class="pie__base">
-        <span>© <span id="anio">2026</span> Konys Pizza · Bucaramanga</span>
-        <a href="admin.html">Acceso administración</a>
-      </div>
-    </div>
-  </footer>
+  <footer id="pie" class="pie"></footer>
 </body>
 </html>

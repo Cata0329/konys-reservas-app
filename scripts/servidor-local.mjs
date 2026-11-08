@@ -40,6 +40,13 @@ createServer(async (req, res) => {
     res.writeHead(403, cabeceras).end('Prohibido');
     return;
   }
+  // Sin .env todavía no existe js/config.js: se responde una configuración vacía
+  // (la página muestra «Falta configurar Supabase») en vez de un 404 en la consola.
+  if (relativo === 'js/config.js' && !(await stat(archivo).catch(() => null))) {
+    res.writeHead(200, { ...cabeceras, 'Content-Type': tipos['.js'], 'Cache-Control': 'no-store' });
+    res.end('// Sin configurar: ejecuta "npm run config" (ver README).\nexport default {};\n');
+    return;
+  }
   try {
     if (!(await stat(archivo)).isFile()) throw new Error();
     res.writeHead(200, { ...cabeceras, 'Content-Type': tipos[extname(archivo)] ?? 'application/octet-stream', 'Cache-Control': 'no-store' });
