@@ -72,6 +72,26 @@ Resultado: **23 aprobadas, 1 fallida, 13 omitidas** (`pruebas/reportes/reporte_p
 Con las credenciales del panel definidas, la suite completa corre contra la base real; sin ellas, deben esperarse **8 omitidas**
 (o 9 sin la cuenta sin permisos), y ninguna fallida.
 
+## 5b. Segunda ejecución contra Supabase real (8 nov 2026 — Catalina, navegador visible)
+
+Resultado: **34 aprobadas, 3 fallidas, 0 omitidas**. Las tres fallas tienen la misma raíz: el Supabase real tarda
+cientos de milisegundos por petición (la copia local responde casi al instante), y eso dejó ver carreras entre
+peticiones asíncronas que en local nunca coincidían.
+
+| Prueba | Qué pasó | Causa | Corrección |
+|---|---|---|---|
+| **11. Flujo completo** — `StaleElementReferenceException` | Selenium encontró un día del calendario y, antes de pulsarlo, la página lo reemplazó. | Al cambiar de mes el calendario se pinta dos veces (primero sin ocupación y luego con la ocupación que llega del servidor). Con la latencia real, el clic caía entre las dos. | **Prueba:** espera a que el calendario termine de cargar (`esperar_calendario()`) antes y después de cada cambio de mes, y si un elemento queda obsoleto lo vuelve a buscar (hasta 3 veces). |
+| **29. Cerrar sesión** — «La sesión sigue guardada» | Se veía «Sesión cerrada», pero la sesión seguía en `sessionStorage` cuando la prueba la revisó. | **Error real de la app:** `salir()` mostraba el mensaje antes de que Supabase terminara de cerrar la sesión (`signOut` va al servidor). | **App:** muestra «Cerrando sesión…», espera a Supabase, borra la clave de sesión y **solo entonces** muestra el mensaje final. |
+| **32. Token JWT URL** — consola: `reservas.js 80:31 Cannot set properties of null (setting 'innerHTML')` | Error en consola al navegar rápido entre secciones del panel. | **Error real de la app:** las métricas de Reservas se pedían al servidor y, cuando llegaban, la persona ya estaba en otra sección; el código buscaba `#metricas` en todo el documento y ya no existía. | **App:** cada sección se monta en su propio contenedor y, al volver de cada petición, se comprueba que siga en pantalla (`isConnected`) antes de escribir. |
+
+Para reproducir esa latencia sin tocar la base real, la copia local acepta `SUPABASE_PRUEBA_RETARDO_MS` (p. ej. 400 ms por
+petición). Con ese retardo apareció un cuarto problema, solo de la herramienta de pruebas: la copia local se cerraba si el
+navegador cancelaba una petición durante la espera. Ya ignora las peticiones canceladas.
+
+**Verificación de las correcciones** (copia local con 400 ms de retardo por petición, `--rapido --oculto --local`):
+**37 aprobadas, 0 fallidas, 0 omitidas** — `pruebas/reportes/reporte_pruebas_2026-11-08_18-46-23.pdf`. Falta repetirla contra
+la base real con las variables `ADMIN_EMAIL_PRUEBAS` / `ADMIN_PASSWORD_PRUEBAS`.
+
 ## 6. Resultado de la última ejecución (base local, 8 nov 2026)
 
 Chrome 156 · Selenium 4.52 · Python 3.14 · modo `--rapido --oculto --local`. **37 aprobadas, 0 fallidas, 0 omitidas.**
