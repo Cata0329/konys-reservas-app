@@ -34,6 +34,8 @@ const raiz = new URL('../../', import.meta.url);
 const CLAVE = process.env.SUPABASE_PRUEBA_CLAVE || randomBytes(18).toString('base64url');
 const SECRETO_JWT = randomBytes(32);
 const DURACION_TOKEN_S = Number(process.env.SUPABASE_PRUEBA_JWT_S) || 3600;
+// Latencia simulada (ms) para reproducir la velocidad de un Supabase en internet.
+const RETARDO_MS = Number(process.env.SUPABASE_PRUEBA_RETARDO_MS) || 0;
 
 const USUARIOS = {
   'admin@konys.test': { id: '11111111-1111-1111-1111-111111111111', admin: true },
@@ -307,8 +309,13 @@ createServer(async (req, res) => {
     return;
   }
 
+  if (RETARDO_MS) await new Promise((r) => setTimeout(r, RETARDO_MS));
   let texto = '';
-  for await (const c of req) texto += c;
+  try {
+    for await (const c of req) texto += c;
+  } catch {
+    return; // el navegador canceló la petición (p. ej. cambió de página): no hay a quién responder
+  }
   let r;
   try {
     const cuerpo = texto ? JSON.parse(texto) : null;

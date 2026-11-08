@@ -63,6 +63,7 @@ from selenium.common.exceptions import (
     NoSuchWindowException,
     InvalidSessionIdException,
     ElementClickInterceptedException,
+    StaleElementReferenceException,
 )
 
 from reporte_pdf import generar_reporte
@@ -154,8 +155,10 @@ def node(*argumentos, entorno=None, esperar=True):
     if esperar:
         return subprocess.run(["node", *argumentos], cwd=CARPETA_PROYECTO, env=env, check=True,
                               capture_output=True, text=True, encoding="utf-8")
+    # KONYS_LOG_EMULADOR=ruta guarda la salida del proceso (útil para diagnosticar el Supabase local).
+    destino = open(os.environ["KONYS_LOG_EMULADOR"], "w", encoding="utf-8") if os.environ.get("KONYS_LOG_EMULADOR")         else subprocess.DEVNULL
     return subprocess.Popen(["node", *argumentos], cwd=CARPETA_PROYECTO, env=env,
-                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                            stdout=destino, stderr=destino)
 
 
 def preparar_base():
@@ -382,7 +385,26 @@ def escribir(selector, valor, lento=True):
 
 
 def hacer_clic(selector_o_elemento, lento=True):
-    elemento = visible(selector_o_elemento) if isinstance(selector_o_elemento, str) else selector_o_elemento
+    """Hace clic. Si se pasa un selector y la página redibujó el elemento justo antes del clic
+    (elemento «obsoleto»), lo vuelve a buscar y reintenta."""
+    if isinstance(selector_o_elemento, str):
+        for intento in range(3):
+            try:
+                return _clic(visible(selector_o_elemento), lento)
+            except StaleElementReferenceException:
+                if intento == 2:
+                    raise
+                time.sleep(0.4)
+    return _clic(selector_o_elemento, lento)
+
+
+def esperar_calendario():
+    """Espera a que el paso 2 termine de cargar los horarios del mes (sin esqueletos de carga)."""
+    esperar(lambda d: d.find_elements(By.CSS_SELECTOR, ".calendario")
+            and not d.find_elements(By.CSS_SELECTOR, "#panel .esqueleto"), "El calendario no terminó de cargar.")
+
+
+def _clic(elemento, lento=True):
     enfocar(elemento)
     esperar(EC.element_to_be_clickable(elemento), "El elemento no se puede pulsar.", 5)
     resaltar(elemento)
@@ -658,6 +680,7 @@ def abrir_reserva(mesa_id, fecha, hora=None):
     pagina = f"reservar.html?mesa={mesa_id}&fecha={fecha.isoformat()}" + (f"&hora={hora}" if hora else "")
     ir(pagina)
     visible("#titulo-paso")
+    esperar_calendario()
     esperar(lambda d: d.find_elements(By.CSS_SELECTOR, "[data-hora], .hora:disabled"), "No aparecieron los horarios.")
 
 
@@ -679,12 +702,14 @@ def prueba_reserva_completa():
         hacer_clic(f"[data-mesa='{mesa['id']}']")
         hacer_clic("#continuar-1")
         visible("#titulo-paso")
-        # Ir al mes de la fecha lejana con las flechas del calendario.
+        # Ir al mes de la fecha lejana con las flechas del calendario
+        # (cada mes se dibuja dos veces: «cargando» y con datos; se espera al segundo).
+        esperar_calendario()
         for _ in range(3):
             if driver.find_elements(By.CSS_SELECTOR, f"[data-fecha='{fecha.isoformat()}']"):
                 break
             hacer_clic("#mes-siguiente")
-            time.sleep(0.5)
+            esperar_calendario()
         hacer_clic(f"[data-fecha='{fecha.isoformat()}']")
         hacer_clic(f"[data-hora='{DATOS_VALIDOS['hora']}']")
         hacer_clic("#continuar-2")
