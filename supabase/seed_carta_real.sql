@@ -1,10 +1,10 @@
 -- =====================================================================
--- Konys Pizza · Migración 003: catálogo oficial
+-- Konys Pizza · Carta real (seed_carta_real.sql)
 -- GENERADO por scripts/generar-sql-catalogo.mjs — no editar a mano.
 -- Fuente: https://soyclubify.com/d/konys (consultada 2026-11-07)
 -- Productos: 67 · Categorías: 14
 --
--- Requiere la migración 002. Es idempotente: al ejecutarla de nuevo
+-- Requiere la migración 002_carta_real.sql. Es idempotente: al ejecutarla de nuevo
 -- actualiza los productos oficiales sin duplicarlos (clave id_externo) y
 -- NO cambia la disponibilidad que el administrador haya definido.
 -- =====================================================================

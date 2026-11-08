@@ -13,7 +13,7 @@
 //   otro@konys.test   → autenticado SIN permisos de administración
 //   Contraseña de ambos: la de la variable SUPABASE_PRUEBA_CLAVE. Si no se define,
 //   se genera una aleatoria en cada arranque (y no se muestra).
-//   tests/selenium/ejecutar.py crea una nueva en cada ejecución.
+//   pruebas/pruebas_formulario.py crea una nueva en cada ejecución.
 //
 // Fidelidad con Supabase:
 //  - JWT HS256 firmados y con vencimiento; un token manipulado o vencido
@@ -63,8 +63,10 @@ const sql = (ruta) => readFile(new URL(ruta, raiz), 'utf8');
 await db.exec(await sql('supabase/migrations/001_esquema_inicial.sql'));
 await db.exec(await sql('supabase/seed.sql'));
 await db.exec(await sql('tests/sql/fixtures/platos_ejemplo_antiguos.sql')); // estado real antes del catálogo
-await db.exec(await sql('supabase/migrations/002_catalogo_y_consulta.sql'));
-await db.exec(await sql('supabase/migrations/003_catalogo_oficial.sql'));
+await db.exec(await sql('supabase/migrations/002_carta_real.sql'));
+await db.exec(await sql('supabase/seed_carta_real.sql'));
+await db.exec(await sql('supabase/migrations/003_consulta_reservas.sql'));
+await db.exec(await sql('supabase/migrations/004_horarios_reales.sql'));
 for (const [email, u] of Object.entries(USUARIOS)) {
   await db.query('insert into auth.users values ($1, $2)', [u.id, email]);
   if (u.admin) await db.query('insert into public.administradores (user_id, nombre) values ($1, $2)', [u.id, 'Admin pruebas']);
@@ -195,12 +197,13 @@ function columnas(select) {
 }
 
 function filtros(params, valores) {
-  const ops = { eq: '=', neq: '<>', gt: '>', gte: '>=', lt: '<', lte: '<=' };
+  const ops = { eq: '=', neq: '<>', gt: '>', gte: '>=', lt: '<', lte: '<=', like: 'like', ilike: 'ilike' };
   const cond = [];
   for (const [k, v] of params) {
     if (['select', 'order', 'limit', 'offset', 'columns'].includes(k)) continue;
     const [op, ...resto] = v.split('.');
-    const valor = resto.join('.');
+    // En PostgREST el comodín de like/ilike es '*'.
+    const valor = ['like', 'ilike'].includes(op) ? resto.join('.').replace(/\*/g, '%') : resto.join('.');
     if (!ops[op]) throw Object.assign(new Error(`operador no soportado ${op}`), { code: 'PGRST100' });
     valores.push(valor === 'true' ? true : valor === 'false' ? false : valor);
     cond.push(`t.${ident(k)} ${ops[op]} $${valores.length}`);

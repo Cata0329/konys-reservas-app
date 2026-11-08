@@ -1,4 +1,4 @@
-// Genera supabase/migrations/003_catalogo_oficial.sql a partir de
+// Genera supabase/seed_carta_real.sql a partir de
 // docs/menu-oficial-konys.json (extraído con scripts/extraer-menu-konys.mjs).
 //
 // Reglas aplicadas (ver docs/CATALOGO_KONYS.md):
@@ -71,12 +71,12 @@ const categoriasSql = Object.entries(CATEGORIAS).map(([nombre, c], i) => {
 });
 
 const sql = `-- =====================================================================
--- Konys Pizza · Migración 003: catálogo oficial
+-- Konys Pizza · Carta real (seed_carta_real.sql)
 -- GENERADO por scripts/generar-sql-catalogo.mjs — no editar a mano.
 -- Fuente: ${menu.fuente} (consultada ${menu.consultado.slice(0, 10)})
 -- Productos: ${productos.length} · Categorías: ${categoriasSql.length}
 --
--- Requiere la migración 002. Es idempotente: al ejecutarla de nuevo
+-- Requiere la migración 002_carta_real.sql. Es idempotente: al ejecutarla de nuevo
 -- actualiza los productos oficiales sin duplicarlos (clave id_externo) y
 -- NO cambia la disponibilidad que el administrador haya definido.
 -- =====================================================================
@@ -122,7 +122,7 @@ update public.platos set origen = 'oficial' where id_externo is not null and ori
 commit;
 `;
 
-await writeFile(new URL('supabase/migrations/003_catalogo_oficial.sql', raiz), sql, 'utf8');
+await writeFile(new URL('supabase/seed_carta_real.sql', raiz), sql, 'utf8');
 const sinImagen = productos.filter((p) => !(p.imagen && usosImagen[p.imagen] === 1)).map((p) => p.nombre);
 
 // ---------------------------------------------------------------------
@@ -150,7 +150,7 @@ const tablaProductos = productos.map((p, i) => {
 const doc = `# Catálogo oficial de Konys Pizza
 
 > **Archivo generado** por \`scripts/generar-sql-catalogo.mjs\` a partir de \`docs/menu-oficial-konys.json\`.
-> Para actualizarlo: \`npm run menu:extraer\` → \`npm run menu:sql\` → ejecutar la migración 003 en Supabase.
+> Para actualizarlo: \`npm run menu:extraer\` → \`npm run menu:sql\` → ejecutar \`supabase/seed_carta_real.sql\` en Supabase.
 
 - **Fuente de verificación:** ${menu.fuente} (menú de pedidos oficial de Konys en Clubify).
 - **Fecha de consulta:** ${menu.consultado.slice(0, 10)}.
@@ -192,7 +192,7 @@ La CSP del sitio permite únicamente ese origen de imágenes además de Supabase
 | Calzone de arequipe | No | Respaldado, \`origen = 'prueba'\`, oculto |
 | Limonada de coco | **Sí**: «Limonada de Coco» (Granizados) | Se conserva el mismo registro y se corrige: nombre, categoría \`granizados\`, precio $12.990 (antes $9.900), descripción vacía como en la fuente (la anterior era inventada), foto oficial |
 
-Respaldo previo: tablas \`respaldo.platos_antes_catalogo\` y \`respaldo.categorias_antes_catalogo\` (migración 002).
+Respaldo previo: tablas \`respaldo.platos_antes_catalogo\` y \`respaldo.categorias_antes_catalogo\` (migración 002_carta_real.sql).
 Los platos de prueba no se borran automáticamente: no tienen dependencias, así que el administrador puede eliminarlos desde el panel
 (filtro «Origen: Dato de prueba») cuando el equipo lo decida.
 
@@ -210,6 +210,6 @@ ${tablaProductos.join('\n')}
 `;
 await writeFile(new URL('docs/CATALOGO_KONYS.md', raiz), doc, 'utf8');
 console.log('✔ docs/CATALOGO_KONYS.md');
-console.log(`✔ 003_catalogo_oficial.sql: ${productos.length} productos, ${categoriasSql.length} categorías`);
+console.log(`✔ seed_carta_real.sql: ${productos.length} productos, ${categoriasSql.length} categorías`);
 console.log(`  Sin imagen individual verificable: ${sinImagen.join(', ') || 'ninguno'}`);
 console.log(`  Sin precio publicado: ${productos.filter((p) => !(p.precio > 0)).map((p) => p.nombre).join(', ') || 'ninguno'}`);

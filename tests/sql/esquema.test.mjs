@@ -15,7 +15,7 @@ const OTRO_ID = '22222222-2222-2222-2222-222222222222';
 
 let db;
 let miercoles; // próximo miércoles (día con almuerzo y noche)
-let lunes;     // próximo lunes (sin atención)
+let lunes;     // próximo lunes
 let mesas;     // nombre -> id
 
 const STUB_SUPABASE = `
@@ -58,8 +58,10 @@ async function esperaError(promesa, codigo) {
 }
 
 const aplicarMigracionesCatalogo = async () => {
-  await db.exec(await readFile(new URL('migrations/002_catalogo_y_consulta.sql', raiz), 'utf8'));
-  await db.exec(await readFile(new URL('migrations/003_catalogo_oficial.sql', raiz), 'utf8'));
+  await db.exec(await readFile(new URL('migrations/002_carta_real.sql', raiz), 'utf8'));
+  await db.exec(await readFile(new URL('seed_carta_real.sql', raiz), 'utf8'));
+  await db.exec(await readFile(new URL('migrations/003_consulta_reservas.sql', raiz), 'utf8'));
+  await db.exec(await readFile(new URL('migrations/004_horarios_reales.sql', raiz), 'utf8'));
 };
 
 const reservar = (mesa, fecha, hora, nombre = 'Laura Gómez', personas = 2) =>
@@ -89,13 +91,13 @@ before(async () => {
   mesas = Object.fromEntries(filas.map((f) => [f.nombre, Number(f.id)]));
 });
 
-test('el seed carga 9 mesas y 11 jornadas; el catálogo oficial, 67 platos y 14 categorías', async () => {
+test('el seed carga 9 mesas y 14 jornadas; la carta real, 67 platos y 14 categorías', async () => {
   const r = await db.query(`select
     (select count(*) from public.mesas)::int m,
     (select count(*) from public.horarios)::int h,
     (select count(*) from public.platos where origen = 'oficial')::int p,
     (select count(*) from public.categorias)::int c`);
-  assert.deepEqual(r.rows[0], { m: 9, h: 11, p: 67, c: 14 });
+  assert.deepEqual(r.rows[0], { m: 9, h: 14, p: 67, c: 14 });
 });
 
 test('el seed es idempotente (ejecutarlo dos veces no duplica)', async () => {
@@ -153,7 +155,9 @@ test('no permite reservar una mesa inactiva', async () => {
 });
 
 test('no permite reservar fuera de los turnos configurados', async () => {
-  await esperaError(reservar(mesas['Mesa 4'], lunes, '20:00'), 'FUERA_DE_HORARIO');      // lunes cerrado
+  await db.query('update public.horarios set activo = false where dia_semana = 1');      // lunes cerrado por el admin
+  await esperaError(reservar(mesas['Mesa 4'], lunes, '20:00'), 'FUERA_DE_HORARIO');
+  await db.query('update public.horarios set activo = true where dia_semana = 1');
   await esperaError(reservar(mesas['Mesa 4'], miercoles, '14:00'), 'FUERA_DE_HORARIO');  // 14:00 + 60 > 14:30
   await esperaError(reservar(mesas['Mesa 4'], miercoles, '22:30'), 'FUERA_DE_HORARIO');  // 22:30 + 60 > 23:00
   await esperaError(reservar(mesas['Mesa 4'], miercoles, '15:00'), 'FUERA_DE_HORARIO');  // entre jornadas
@@ -198,7 +202,7 @@ test('el público solo ve mesas activas, horarios activos y platos disponibles',
   assert.ok(!p.rows.some((f) => f.nombre === 'Calzone de arequipe'));
   await db.query('update public.horarios set activo = false where dia_semana = 2');
   const h = await como('anon', null, 'select count(*)::int n from public.horarios');
-  assert.equal(h.rows[0].n, 10);
+  assert.equal(h.rows[0].n, 12);
   await db.query('update public.horarios set activo = true where dia_semana = 2');
 });
 
@@ -220,7 +224,7 @@ test('el administrador puede leer reservas y gestionar mesas, horarios y carta',
     `update public.mesas set activa = true where nombre = 'Mesa 9' returning activa`);
   assert.equal(upd.rows[0].activa, true);
   await como('authenticated', ADMIN_ID,
-    `insert into public.horarios (dia_semana, jornada, hora_inicio, hora_fin) values (1, 'noche', '17:00', '22:00')`);
+    `update public.horarios set hora_fin = '22:00' where dia_semana = 1 and jornada = 'noche' returning id`);
   await como('authenticated', ADMIN_ID,
     `insert into public.platos (nombre, categoria_id, precio) values ('Pizza nueva', 'pizzas', 30000)`);
   await como('authenticated', ADMIN_ID,
@@ -229,10 +233,10 @@ test('el administrador puede leer reservas y gestionar mesas, horarios y carta',
 
 test('horarios: rechaza jornadas que se cruzan o donde no cabe una reserva', async () => {
   await esperaError(db.query(
-    `insert into public.horarios (dia_semana, jornada, hora_inicio, hora_fin) values (2, 'almuerzo', '16:00', '18:00')`),
+    `update public.horarios set hora_fin = '18:00' where dia_semana = 2 and jornada = 'almuerzo'`),
   'horarios_sin_cruce');
   await esperaError(db.query(
-    `insert into public.horarios (dia_semana, jornada, hora_inicio, hora_fin, duracion_min) values (1, 'almuerzo', '12:00', '12:30', 60)`),
+    `update public.horarios set hora_inicio = '12:00', hora_fin = '12:30', duracion_min = 60 where dia_semana = 1 and jornada = 'almuerzo'`),
   'horarios_cabe_una_reserva');
 });
 
@@ -340,4 +344,34 @@ test('mi reserva: el cliente cancela su reserva futura y libera el horario', asy
   await esperaError(como('anon', null, 'select public.cancelar_reserva($1, $2)', [codigo, 'Felipe Serrano']), 'RESERVA_NO_CANCELABLE');
   const otra = await reservar(mesas['Mesa 8'], miercoles, '20:00', 'Nueva Persona', 2);
   assert.equal(otra.rows.length, 1, 'el horario cancelado quedó libre');
+});
+
+test('horarios: la migración 004 corrige el horario antiguo (lunes cerrado, martes solo noche)', async () => {
+  // Estado que tiene hoy la base real (seed original).
+  await db.exec(`delete from public.horarios where dia_semana = 1 or (dia_semana = 2 and jornada = 'almuerzo');
+                 update public.horarios set activo = false where dia_semana = 7 and jornada = 'noche';`);
+  await db.exec(await readFile(new URL('migrations/004_horarios_reales.sql', raiz), 'utf8'));
+  await db.exec(await readFile(new URL('migrations/004_horarios_reales.sql', raiz), 'utf8')); // idempotente
+  const r = await db.query(`select count(*)::int n,
+      count(*) filter (where activo)::int activas,
+      count(*) filter (where jornada = 'almuerzo' and hora_inicio = '12:30' and hora_fin = '14:30')::int almuerzos,
+      count(*) filter (where jornada = 'noche' and hora_inicio = '17:00' and hora_fin = '23:00')::int noches
+    from public.horarios`);
+  assert.deepEqual(r.rows[0], { n: 14, activas: 14, almuerzos: 7, noches: 7 });
+});
+
+test('revertir: revertir_carta_real.sql devuelve platos y categorías al respaldo', async () => {
+  await db.exec(await readFile(new URL('revertir/revertir_carta_real.sql', raiz), 'utf8'));
+  const iguales = await db.query(`select count(*)::int n from respaldo.platos_antes_catalogo r
+    join public.platos p using (id)
+    where p.nombre = r.nombre and p.precio = r.precio and p.categoria_id = r.categoria_id and p.disponible = r.disponible`);
+  assert.equal(iguales.rows[0].n, 8, 'los 8 platos originales quedan como estaban');
+  const oficiales = await db.query(`select count(*)::int n from public.platos where origen = 'oficial'`);
+  assert.equal(oficiales.rows[0].n, 0);
+  const cats = await db.query('select id from public.categorias order by id');
+  assert.deepEqual(cats.rows.map((c) => c.id), ['bebidas', 'entradas', 'pizzas', 'postres']);
+  // Y la carta real se puede volver a aplicar después sin problemas.
+  await db.exec(await readFile(new URL('seed_carta_real.sql', raiz), 'utf8'));
+  const de_nuevo = await db.query(`select count(*)::int n from public.platos where origen = 'oficial'`);
+  assert.equal(de_nuevo.rows[0].n, 67);
 });

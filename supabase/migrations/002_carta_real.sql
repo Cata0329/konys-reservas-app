@@ -1,10 +1,12 @@
 -- =====================================================================
--- Konys Pizza · Migración 002
--- Estructura para el catálogo oficial, respaldo previo y consulta pública
--- de reservas por código.
+-- Konys Pizza · Migración 002: estructura para la carta real
 --
--- Ejecutar DESPUÉS de 001 y ANTES de 003. Es idempotente: se puede
--- ejecutar varias veces sin duplicar nada ni borrar datos.
+-- Prepara las tablas para el catálogo oficial de Konys (los datos se cargan
+-- después con supabase/seed_carta_real.sql). Antes de cambiar nada respalda
+-- platos y categorías en el esquema "respaldo" (no expuesto por la API).
+--
+-- Es idempotente: se puede ejecutar varias veces sin duplicar ni borrar datos.
+-- Instrucciones para ejecutarla y revertirla: docs/CAMBIOS_SUPABASE.md
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
@@ -87,89 +89,7 @@ end $$;
 create index if not exists platos_recomendado_idx on public.platos (recomendado) where recomendado;
 
 -- ---------------------------------------------------------------------
--- 3. Consulta y cancelación de reservas por el cliente
---    El cliente recibe un código de 8 caracteres (inicio del UUID). Para
---    consultar debe dar el código Y el nombre con que reservó; así nadie
---    puede leer reservas ajenas sin conocer ambos datos. No se expone el
---    teléfono ni ningún otro dato personal.
--- ---------------------------------------------------------------------
-create or replace function public.consultar_reserva(p_codigo text, p_nombre text)
-returns table (
-  codigo         text,
-  mesa_nombre    text,
-  zona           text,
-  fecha          date,
-  hora_inicio    time,
-  hora_fin       time,
-  num_personas   smallint,
-  estado         text,
-  cancelable     boolean
-)
-language plpgsql
-stable
-security definer
-set search_path = public
-as $$
-#variable_conflict use_column
-declare
-  v_codigo text := lower(btrim(coalesce(p_codigo, '')));
-  v_nombre text := lower(btrim(coalesce(p_nombre, '')));
-  v_ahora  timestamp := now() at time zone 'America/Bogota';
-begin
-  if v_codigo !~ '^[0-9a-f]{8}$' or char_length(v_nombre) < 3 then
-    raise exception 'DATOS_CONSULTA_INVALIDOS';
-  end if;
-  return query
-    select upper(left(r.id::text, 8)), m.nombre, m.zona, r.fecha, r.hora_inicio, r.hora_fin,
-           r.num_personas, r.estado,
-           (r.estado = 'confirmada' and r.fecha + r.hora_inicio > v_ahora)
-    from public.reservas r
-    join public.mesas m on m.id = r.mesa_id
-    where left(r.id::text, 8) = v_codigo
-      and lower(btrim(r.cliente_nombre)) = v_nombre
-    limit 1;
-end;
-$$;
-
-create or replace function public.cancelar_reserva(p_codigo text, p_nombre text)
-returns text
-language plpgsql
-volatile
-security definer
-set search_path = public
-as $$
-declare
-  v_codigo text := lower(btrim(coalesce(p_codigo, '')));
-  v_nombre text := lower(btrim(coalesce(p_nombre, '')));
-  v_ahora  timestamp := now() at time zone 'America/Bogota';
-  v_id     uuid;
-begin
-  if v_codigo !~ '^[0-9a-f]{8}$' or char_length(v_nombre) < 3 then
-    raise exception 'DATOS_CONSULTA_INVALIDOS';
-  end if;
-  select r.id into v_id
-  from public.reservas r
-  where left(r.id::text, 8) = v_codigo
-    and lower(btrim(r.cliente_nombre)) = v_nombre
-    and r.estado = 'confirmada'
-    and r.fecha + r.hora_inicio > v_ahora
-  limit 1
-  for update;
-  if v_id is null then
-    raise exception 'RESERVA_NO_CANCELABLE';
-  end if;
-  update public.reservas set estado = 'cancelada' where id = v_id;
-  return 'cancelada';
-end;
-$$;
-
-revoke all on function public.consultar_reserva(text, text) from public;
-grant execute on function public.consultar_reserva(text, text) to anon, authenticated;
-revoke all on function public.cancelar_reserva(text, text) from public;
-grant execute on function public.cancelar_reserva(text, text) to anon, authenticated;
-
--- ---------------------------------------------------------------------
--- 4. Defensa adicional: el público no puede escribir en ninguna tabla
+-- 3. Defensa adicional: el público no puede escribir en ninguna tabla
 --    (vuelve a aplicarse por si se crearon tablas o columnas nuevas).
 -- ---------------------------------------------------------------------
 revoke insert, update, delete, truncate on all tables in schema public from anon;
