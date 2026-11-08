@@ -26,7 +26,7 @@ Sirve como guion para la sustentación.
 |---|---|---|
 | `confirmada` | Sí | El cliente va a venir. |
 | `completada` | Sí | Ya ocurrió; se conserva como historial (no se puede "reutilizar" el pasado). |
-| `cancelada`  | **No** | Libera el horario para otro cliente. |
+| `cancelada`  | **No** | Libera el horario para otro cliente. La cancela el administrador o el propio cliente desde «Mi reserva» (`cancelar_reserva()`, solo si aún no pasó y con código + nombre). |
 
 Además, no se puede reservar:
 

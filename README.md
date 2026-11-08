@@ -1,103 +1,108 @@
 # Konys Pizza · Sistema de reservas
 
-Aplicación web para reservar mesas en Konys Pizza (Cra. 36 con calle 41, Bucaramanga) sin crear
-cuenta, con carta digital y un panel de administración protegido.
+Aplicación web para reservar mesas en Konys Pizza (Cra. 36 con calle 41, Bucaramanga) sin crear cuenta,
+con la carta oficial del restaurante y un panel de administración protegido.
 
-- **Frontend:** HTML5, CSS3 y JavaScript vanilla (módulos ES), sin frameworks ni paso de compilación.
-- **Backend:** Supabase (PostgreSQL, Auth, Storage) con Row Level Security.
-- **Despliegue previsto:** Vercel.
-- **Diseño:** fiel al archivo de alta fidelidad de Figma (capturas en `docs/diseno/`).
+- **Frontend:** HTML5, CSS3 y JavaScript vanilla (módulos ES), sin framework ni compilación.
+- **Backend:** Supabase (PostgreSQL, Auth y Storage) con Row Level Security.
+- **Pruebas:** Node `node:test` + PGlite (lógica y SQL) y Selenium con Python (recorridos en Chrome).
+- **Despliegue previsto:** Vercel. **Diseño:** fiel a Figma (capturas en `docs/diseno/`).
 
-> Enlace de la aplicación desplegada: _pendiente_ · Enlace del video: _pendiente_
+> Enlace de la aplicación desplegada: _pendiente de autorización_ · Enlace del video: _pendiente_
 
----
+## Documentación
+
+| Documento | Contenido |
+|---|---|
+| [`docs/INFORME_AUDITORIA.md`](docs/INFORME_AUDITORIA.md) | Estado de RF-01…RF-14 y RNF-01…RNF-09 con evidencias |
+| [`docs/CATALOGO_KONYS.md`](docs/CATALOGO_KONYS.md) | Catálogo oficial (67 productos), decisiones de modelado e imágenes |
+| [`docs/INFORME_CONSOLA.md`](docs/INFORME_CONSOLA.md) | Revisión de consola, red y terminal |
+| [`docs/INFORME_PRUEBAS_SELENIUM.md`](docs/INFORME_PRUEBAS_SELENIUM.md) | Casos Selenium, resultados y correcciones |
+| [`docs/REGLA_DISPONIBILIDAD.md`](docs/REGLA_DISPONIBILIDAD.md) | Cómo se evitan las reservas duplicadas |
 
 ## Estructura
 
 ```
 konys-reservas-app/
-├── index.html              # Inicio: portada, consulta rápida, mesas, carta y contacto
-├── reservar.html           # Flujo de reserva: mesa → fecha y hora → datos → confirmación
-├── admin.html              # Panel: acceso + Resumen, Mesas, Horarios, Reservas, Carta
-├── css/
-│   ├── styles.css          # Tokens del sistema visual, componentes y sitio público
-│   └── admin.css           # Estilos del panel
+├── index.html · reservar.html · mi-reserva.html · admin.html
+├── css/                    styles.css (sistema visual + sitio), admin.css
 ├── js/
-│   ├── supabase.js         # Cliente único de Supabase (lee js/config.js)
-│   ├── api.js              # TODAS las consultas a Supabase y traducción de errores
-│   ├── disponibilidad.js   # Cálculo de horarios libres (solo para mostrar)
-│   ├── validaciones.js     # Validación de formularios
-│   ├── formato.js          # Fechas, horas (zona America/Bogota) y precios
-│   ├── ui.js               # Iconos, ilustraciones, alertas, diálogos
-│   ├── inicio.js           # Lógica de index.html
-│   ├── reserva.js          # Lógica de reservar.html
-│   └── admin/              # app.js (acceso y navegación) + una sección por archivo
+│   ├── supabase.js         Cliente único (PKCE, sesión en sessionStorage, tiempo límite)
+│   ├── api.js              TODAS las consultas a Supabase y traducción de errores
+│   ├── disponibilidad.js · validaciones.js · formato.js · ui.js
+│   ├── inicio.js · reserva.js · mi-reserva.js
+│   └── admin/              app.js (acceso), inactividad.js (5 min), una sección por archivo
 ├── supabase/
-│   ├── migrations/001_esquema_inicial.sql   # Tablas, reglas, funciones y RLS
-│   └── seed.sql                             # Datos iniciales del diseño (mesas, horarios, carta)
+│   ├── migrations/001_esquema_inicial.sql      Tablas, reglas, RLS
+│   ├── migrations/002_catalogo_y_consulta.sql  Respaldo, columnas del catálogo, «Mi reserva»
+│   ├── migrations/003_catalogo_oficial.sql     Catálogo oficial (GENERADO)
+│   └── seed.sql                                Mesas y horarios iniciales
 ├── scripts/
-│   ├── generar-config.mjs  # Crea js/config.js desde .env (o variables de Vercel)
-│   └── servidor-local.mjs  # Servidor estático para desarrollo
-├── tests/                  # Pruebas de lógica y del esquema SQL
-├── docs/
-│   ├── REGLA_DISPONIBILIDAD.md
-│   └── diseno/             # Capturas del diseño de Figma
-├── .env.example
-├── vercel.json
-└── package.json            # Solo scripts y una dependencia de desarrollo para pruebas
+│   ├── generar-config.mjs        .env → js/config.js (rechaza claves secretas)
+│   ├── extraer-menu-konys.mjs    Menú oficial → docs/menu-oficial-konys.json
+│   ├── generar-sql-catalogo.mjs  JSON → migración 003 + docs/CATALOGO_KONYS.md
+│   ├── seguridad-http.mjs        CSP y cabeceras (las mismas que vercel.json)
+│   └── servidor-local.mjs        Servidor de desarrollo
+├── tests/                  *.test.mjs (Node), sql/, selenium/, soporte/supabase-local.mjs
+├── pruebas/                Aporte previo (Selenium de otro formulario; ver informe)
+└── docs/
 ```
-
-La interfaz, las consultas a Supabase (`api.js`) y las validaciones (`validaciones.js`,
-`disponibilidad.js`) están separadas, como pide el documento del proyecto (RNF-06).
-
----
 
 ## Puesta en marcha
 
-### 1. Crear la base de datos en Supabase
+### 1. Base de datos en Supabase
 
-1. En [supabase.com](https://supabase.com), crea un proyecto (o abre el existente).
-2. Ve a **SQL Editor → New query**, pega el contenido de
-   `supabase/migrations/001_esquema_inicial.sql` y pulsa **Run**.
-   La migración no borra datos: si una tabla ya existe, la conserva.
-3. En otra consulta, pega `supabase/seed.sql` y pulsa **Run** (carga las 9 mesas, los horarios y la
-   carta del diseño; solo inserta si las tablas están vacías).
+En **SQL Editor**, ejecuta en este orden (todas son idempotentes y ninguna borra tablas ni reservas):
 
-### 2. Crear el usuario administrador
+| Paso | Archivo | Qué hace |
+|---|---|---|
+| 1 | `supabase/migrations/001_esquema_inicial.sql` | Esquema, reglas de reserva, RLS. *(Ya ejecutada si la base existe.)* |
+| 2 | `supabase/seed.sql` | 9 mesas y horarios (solo si las tablas están vacías). *(Ya ejecutado si la base existe.)* |
+| 3 | `supabase/migrations/002_catalogo_y_consulta.sql` | **Respalda** `platos` y `categorias` en el esquema `respaldo`, añade columnas del catálogo y las funciones de «Mi reserva». |
+| 4 | `supabase/migrations/003_catalogo_oficial.sql` | Carga las 14 categorías y 67 productos oficiales, oculta los 7 platos de ejemplo y corrige «Limonada de coco». |
 
-1. **Authentication → Users → Add user → Create new user**: escribe el correo y una contraseña
-   segura, y marca *Auto Confirm User*.
-2. En **SQL Editor** ejecuta (cambiando el correo):
+Comprobación después del paso 4:
 
+```sql
+select origen, disponible, count(*) from public.platos group by 1, 2 order by 1, 2;
+-- Esperado: oficial/true 67 · prueba/false 7
+select count(*) from respaldo.platos_antes_catalogo;  -- 8 (respaldo previo)
+```
+
+Para actualizar el catálogo en el futuro: `npm run menu:extraer`, `npm run menu:sql` y volver a ejecutar la 003
+(no duplica productos y respeta la disponibilidad que haya definido el administrador).
+
+### 2. Autenticación (Supabase → Authentication)
+
+1. **Users → Add user**: correo y contraseña segura, *Auto Confirm User*. Después, en SQL Editor:
    ```sql
    insert into public.administradores (user_id, nombre)
    select id, 'Administrador' from auth.users where email = 'tu-correo@ejemplo.com';
    ```
+2. **Sign In / Providers → desactiva «Allow new users to sign up»**.
+3. **URL Configuration**: *Site URL* = la URL de Vercel; *Redirect URLs* = solo esa URL y
+   `http://localhost:5173` (no uses comodines amplios).
+4. **Rate Limits**: deja activos los límites de inicio de sesión (protección contra fuerza bruta en el servidor).
+5. Recomendado: **JWT expiry** de 600–900 s (ver «Manejo de tokens»).
 
-3. Recomendado: **Authentication → Sign In / Providers → desactiva "Allow new users to sign up"**.
-   Aunque alguien creara una cuenta, no tendría permisos (no estaría en `administradores`).
-
-### 3. Configurar las variables
+### 3. Variables de entorno
 
 ```bash
 cp .env.example .env
 ```
 
-Completa en `.env`:
-
 | Variable | Dónde se obtiene |
 |---|---|
 | `SUPABASE_URL` | Project Settings → API → Project URL |
-| `SUPABASE_PUBLISHABLE_KEY` | Project Settings → API Keys → *Publishable key* (o la *anon public* en proyectos antiguos) |
-| `ADMIN_EMAIL` | El correo del administrador creado en el paso 2 |
-| `CONTACTO_WHATSAPP`, `CONTACTO_INSTAGRAM` | Opcionales; se muestran en el pie de página |
+| `SUPABASE_PUBLISHABLE_KEY` | Project Settings → API Keys → *Publishable key* (o *anon public*) |
+| `ADMIN_EMAIL` | Correo del administrador del paso 2 |
+| `CONTACTO_WHATSAPP`, `CONTACTO_INSTAGRAM` | Opcionales (pie de página) |
 
-**Nunca** uses la clave `service_role` / `sb_secret_…`: el script se niega a generar la
-configuración si la detecta.
+Nunca uses la clave `service_role` / `sb_secret_…`: el script se niega a generar la configuración si la detecta.
 
 ### 4. Ejecutar localmente
 
-Requiere Node.js 18 o superior.
+Requiere Node.js 18+.
 
 ```bash
 npm install
@@ -107,64 +112,86 @@ npm install
 npm run dev
 ```
 
-Abre <http://localhost:5173>. El panel está en <http://localhost:5173/admin>.
+Abre <http://localhost:5173> (panel en `/admin`, consulta de reservas en `/mi-reserva`).
 
-### 5. Pruebas
+## Pruebas
 
 ```bash
 npm test
 ```
 
-Ejecuta 28 pruebas: la lógica del navegador y la migración SQL real sobre PostgreSQL embebido
-(PGlite), incluyendo reservas solapadas, cancelaciones, capacidad, mesas inactivas, turnos y RLS.
+44 pruebas: lógica de disponibilidad, validaciones, control de inactividad, CSP y las migraciones SQL reales
+sobre PostgreSQL embebido (solapamientos, cancelaciones, capacidad, turnos, catálogo, RLS por rol).
 
-### 6. Desplegar en Vercel
+```bash
+py -m pip install -r pruebas/requirements.txt
+```
 
-1. Importa el repositorio en Vercel (framework: *Other*). `vercel.json` ya define el build
-   (`node scripts/generar-config.mjs`) y las URL limpias (`/admin`, `/reservar`).
-2. En **Settings → Environment Variables** añade `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` y
-   `ADMIN_EMAIL`.
+```bash
+py -X utf8 tests/selenium/ejecutar.py
+```
 
----
+31 casos en Chrome (funcionales, seguridad, inactividad y consola). Usan un Supabase **local** de pruebas, nunca
+la base real; ver [`docs/INFORME_PRUEBAS_SELENIUM.md`](docs/INFORME_PRUEBAS_SELENIUM.md).
 
 ## Seguridad
 
-- **RLS activado en todas las tablas.** El público solo puede leer mesas activas, horarios activos,
-  categorías y platos disponibles.
-- **Reservas:** el público no puede leer, modificar ni insertar directamente en `reservas`. Solo
-  puede llamar a `crear_reserva()` (valida todo y solo inserta los campos permitidos) y a
-  `ocupacion()` (devuelve franjas ocupadas **sin** nombres ni teléfonos).
-- **Panel:** autenticación real con Supabase Auth (contraseñas cifradas por Supabase) y
-  autorización con la tabla `administradores` + función `es_admin()` en cada política. La ruta
-  `/admin` no es la protección: sin una sesión de administrador, la base de datos no entrega ni
-  acepta datos administrativos.
-- **Imágenes:** bucket `imagenes` público de solo lectura; subir/borrar requiere ser administrador.
-- **Secretos:** `.env` y `js/config.js` están en `.gitignore`. La clave publishable es pública por
-  diseño; lo que protege los datos es RLS.
+### Autorización (lo que realmente protege los datos)
+- **RLS en todas las tablas.** El público solo lee mesas activas, horarios activos, categorías y platos disponibles.
+- **Reservas:** el público no puede leer, insertar ni modificar la tabla. Solo usa funciones `security definer`:
+  `crear_reserva()` (valida todo), `ocupacion()` (franjas sin datos personales), `consultar_reserva()` y
+  `cancelar_reserva()` (requieren código **y** nombre; nunca devuelven el teléfono).
+- **Panel:** Supabase Auth + tabla `administradores` + función `es_admin()` en cada política. Un usuario
+  autenticado que no sea administrador no puede leer ni modificar nada (probado con solicitudes reales).
+- **Clientes no modifican precios ni productos**: `anon` no tiene permisos de escritura en ninguna tabla.
+- **Imágenes:** bucket `imagenes` de solo lectura pública; subir o borrar requiere ser administrador.
 
-## Regla de disponibilidad
+### Manejo de tokens
+- El acceso usa correo + contraseña con `supabase-js` (`signInWithPassword`): los tokens llegan en el cuerpo de
+  la respuesta HTTPS, **nunca en la URL**.
+- `flowType: 'pkce'` y `detectSessionInUrl: false`: aunque alguien abra `/admin#access_token=…`, la app no lo usa
+  y además **borra** de la barra de direcciones cualquier `access_token`, `refresh_token`, `code` o `token`.
+- La sesión se guarda en **`sessionStorage`** (clave `konys-admin-sesion`): desaparece al cerrar la pestaña. **No
+  son cookies HttpOnly**: el JavaScript de la propia página puede leerla; por eso la CSP solo permite scripts
+  propios y de `cdn.jsdelivr.net` (supabase-js).
+- Al abrir el panel se llama a `auth.getUser()`, que valida el token **en el servidor** de Supabase Auth. Un token
+  manipulado, vencido o de una sesión cerrada se rechaza y se borra.
+- Cerrar sesión llama a `signOut({ scope: 'global' })`: Supabase revoca la sesión y todos sus refresh tokens.
+  Igual que en cualquier JWT sin estado, el *access token* ya emitido sigue siendo aceptado por la API REST hasta
+  su vencimiento; por eso se recomienda un *JWT expiry* corto (paso 2.5). La aplicación ya no lo conserva.
 
-Ver [`docs/REGLA_DISPONIBILIDAD.md`](docs/REGLA_DISPONIBILIDAD.md). Resumen: reservas de duración
-configurable (60 min) que empiezan cada 30 min dentro de las jornadas activas; una restricción de
-exclusión de PostgreSQL impide que dos reservas no canceladas de la misma mesa se crucen, incluso
-si se confirman al mismo tiempo.
+### Cierre por inactividad (5 minutos)
+- `js/admin/inactividad.js`: `TIEMPO_INACTIVIDAD_MS = 300000`. Ratón, teclado, clic, rueda, desplazamiento y toque
+  reinician el contador. Al vencer: `signOut` real, vuelta al acceso con «Tu sesión se cerró por inactividad», panel
+  vaciado y URL sin la sección.
+- Antes de cada clic, envío o cambio dentro del panel se comprueba que la sesión no haya vencido (por ejemplo, si el
+  equipo estuvo suspendido); recargar la página tampoco reinicia el contador.
+- Solo afecta al panel, no al sitio público.
+- **Pruebas:** en `localhost` se puede acortar con `?inactividad=<segundos>` (nunca más de 5 min). En cualquier otro
+  dominio el parámetro se ignora.
 
-## Decisiones tomadas donde el diseño no lo definía
+### Otras medidas
+- **CSP** y cabeceras (`X-Frame-Options`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS) en `vercel.json`,
+  generadas desde `scripts/seguridad-http.mjs` y verificadas por una prueba.
+- **XSS:** todo texto dinámico pasa por `esc()` antes de insertarse en el HTML.
+- **Inyección SQL:** no hay SQL construido en el navegador; PostgREST y las funciones usan parámetros.
+- **Validación doble:** formularios en el navegador y restricciones/funciones en la base.
+- **Intentos de acceso:** tras 5 fallos el formulario se bloquea 60 s (además de los límites de Supabase Auth).
+- **Secretos:** `.env` y `js/config.js` están en `.gitignore`; la clave publishable es pública por diseño.
 
-- **Acceso al panel con solo contraseña** (como en el diseño): el correo del administrador viene de
-  `ADMIN_EMAIL`. Para varios administradores habría que añadir un campo de correo.
-- **Paso 1 "Mesa" y paso 3 "Tus datos"** no tienen pantalla propia en Figma: se construyeron con
-  los mismos componentes (tarjetas de mesa, campos, contador) y los estados del archivo 4.
-- **Pantalla de confirmación:** reutiliza la tarjeta "Tu reserva" con la alerta de éxito del sistema
-  visual y un código corto de reserva.
-- **Horarios:** cada jornada se guarda al pulsar "Guardar" en su fila (en vez de un único botón
-  global), para que un error en una fila no bloquee las demás.
-- **Seed:** la entrada "Palitos de ajo y queso" tiene precio y descripción de ejemplo (en el diseño
-  aparecen cortados); edítalos desde el panel.
-- **Contacto:** el diseño muestra `[TU NÚMERO DE WHATSAPP]` / `[TU INSTAGRAM]`; se configuran con
-  variables y se ocultan si están vacías.
+## Despliegue en Vercel
 
-## Fuera del alcance (por ahora)
+1. Importar el repositorio (framework *Other*). `vercel.json` define el build, las URL limpias y las cabeceras.
+2. *Settings → Environment Variables*: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `ADMIN_EMAIL`.
+3. Añadir la URL de Vercel en Supabase → Authentication → URL Configuration.
+4. Vercel sirve todo por HTTPS; HSTS obliga al navegador a mantenerlo.
 
-Pagos o anticipos, domicilios, app nativa, cuentas de clientes, notificaciones, reportes e
-inventario. Tampoco hay límite de reservas por persona (anti-spam); sería una mejora futura.
+## Decisiones donde el diseño o la fuente no lo definían
+
+- **Acceso con solo contraseña** (como en Figma): el correo viene de `ADMIN_EMAIL`.
+- **Carta:** la fuente oficial es el menú de Konys en Clubify; ver [`docs/CATALOGO_KONYS.md`](docs/CATALOGO_KONYS.md).
+- **Mi reserva:** el código de 8 caracteres de la confirmación + el nombre permiten consultar y cancelar.
+
+## Fuera del alcance
+
+Pagos, domicilios, app nativa, cuentas de clientes, notificaciones, reportes e inventario.
