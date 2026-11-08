@@ -57,6 +57,11 @@ async function esperaError(promesa, codigo) {
   });
 }
 
+const aplicarMigracionesCatalogo = async () => {
+  await db.exec(await readFile(new URL('migrations/002_catalogo_y_consulta.sql', raiz), 'utf8'));
+  await db.exec(await readFile(new URL('migrations/003_catalogo_oficial.sql', raiz), 'utf8'));
+};
+
 const reservar = (mesa, fecha, hora, nombre = 'Laura Gómez', personas = 2) =>
   como('anon', null,
     'select * from public.crear_reserva($1, $2, $3, $4, $5, $6)',
@@ -67,6 +72,9 @@ before(async () => {
   await db.exec(STUB_SUPABASE);
   await db.exec(await readFile(new URL('migrations/001_esquema_inicial.sql', raiz), 'utf8'));
   await db.exec(await readFile(new URL('seed.sql', raiz), 'utf8'));
+  // Estado real de Supabase antes del catálogo: los 8 platos de ejemplo del seed inicial.
+  await db.exec(await readFile(new URL('fixtures/platos_ejemplo_antiguos.sql', import.meta.url), 'utf8'));
+  await aplicarMigracionesCatalogo();
   await db.exec(`
     insert into auth.users values ('${ADMIN_ID}', 'admin@konys.test'), ('${OTRO_ID}', 'otro@konys.test');
     insert into public.administradores (user_id, nombre) values ('${ADMIN_ID}', 'Admin');
@@ -81,12 +89,13 @@ before(async () => {
   mesas = Object.fromEntries(filas.map((f) => [f.nombre, Number(f.id)]));
 });
 
-test('el seed carga 9 mesas, 11 jornadas y 8 platos', async () => {
+test('el seed carga 9 mesas y 11 jornadas; el catálogo oficial, 67 platos y 14 categorías', async () => {
   const r = await db.query(`select
     (select count(*) from public.mesas)::int m,
     (select count(*) from public.horarios)::int h,
-    (select count(*) from public.platos)::int p`);
-  assert.deepEqual(r.rows[0], { m: 9, h: 11, p: 8 });
+    (select count(*) from public.platos where origen = 'oficial')::int p,
+    (select count(*) from public.categorias)::int c`);
+  assert.deepEqual(r.rows[0], { m: 9, h: 11, p: 67, c: 14 });
 });
 
 test('el seed es idempotente (ejecutarlo dos veces no duplica)', async () => {
@@ -234,4 +243,101 @@ test('no se puede eliminar una mesa con reservas históricas', async () => {
     `insert into public.mesas (nombre, zona, capacidad) values ('Mesa 10', 'salon', 2) returning id`);
   const borrada = await como('authenticated', ADMIN_ID, 'delete from public.mesas where id = $1 returning id', [nueva.rows[0].id]);
   assert.equal(borrada.rows.length, 1);
+});
+
+// ---------------------------------------------------------------------
+// Catálogo oficial (migraciones 002 y 003)
+// ---------------------------------------------------------------------
+test('catálogo: los platos de ejemplo quedan respaldados, ocultos y marcados como prueba', async () => {
+  const respaldo = await db.query('select count(*)::int n from respaldo.platos_antes_catalogo');
+  assert.equal(respaldo.rows[0].n, 8);
+  const prueba = await db.query(`select nombre, disponible from public.platos where origen = 'prueba' order by nombre`);
+  assert.equal(prueba.rows.length, 7);
+  assert.ok(prueba.rows.every((f) => f.disponible === false));
+  const publico = await como('anon', null, `select count(*)::int n from public.platos where nombre = 'Pollo BBQ'`);
+  assert.equal(publico.rows[0].n, 0, 'un plato de prueba no debe verse en la carta pública');
+  await assert.rejects(como('anon', null, 'select * from respaldo.platos_antes_catalogo'));
+});
+
+test('catálogo: "Limonada de coco" se corrige con los datos oficiales sin duplicarse', async () => {
+  const r = await db.query(`select id, nombre, categoria_id, precio, descripcion, origen from public.platos where lower(nombre) = 'limonada de coco'`);
+  assert.equal(r.rows.length, 1);
+  assert.deepEqual({ ...r.rows[0], id: undefined }, {
+    id: undefined, nombre: 'Limonada de Coco', categoria_id: 'granizados', precio: 12990, descripcion: null, origen: 'oficial',
+  });
+  const antes = await db.query(`select id from respaldo.platos_antes_catalogo where nombre = 'Limonada de coco'`);
+  assert.equal(String(r.rows[0].id), String(antes.rows[0].id), 'se conserva el mismo id');
+});
+
+test('catálogo: reaplicar las migraciones no duplica y respeta la disponibilidad del admin', async () => {
+  await db.query(`update public.platos set disponible = false where nombre = 'HAWAIANA'`);
+  await aplicarMigracionesCatalogo();
+  const r = await db.query(`select count(*)::int n, count(distinct id_externo)::int d from public.platos where origen = 'oficial'`);
+  assert.deepEqual(r.rows[0], { n: 67, d: 67 });
+  const haw = await db.query(`select disponible from public.platos where nombre = 'HAWAIANA'`);
+  assert.equal(haw.rows[0].disponible, false);
+  await db.query(`update public.platos set disponible = true where nombre = 'HAWAIANA'`);
+  const dup = await db.query(`select nombre, categoria_id, count(*) from public.platos group by 1, 2 having count(*) > 1`);
+  assert.equal(dup.rows.length, 0);
+});
+
+test('catálogo: precios, imágenes, variantes y subcategorías tal como la fuente oficial', async () => {
+  const fila = async (n) => (await db.query('select * from public.platos where nombre = $1', [n])).rows[0];
+  const bukara = await fila('BUKARA⭐💚(GANADORA PIZZA MASTER)');
+  assert.equal(bukara.precio, 29900);
+  assert.equal(bukara.subcategoria, 'Konys de autor');
+  assert.equal(bukara.recomendado, true);
+  assert.deepEqual(bukara.etiquetas, ['PIZZA MASTER 2023']);
+  assert.match(bukara.imagen_url, /^https:\/\/pub-[a-z0-9]+\.r2\.dev\/.+\.webp$/);
+  assert.equal((await fila('CONO CONGELADO')).precio, null, 'precio no publicado → null, no $0');
+  assert.equal((await fila('SODA ARANDANOS')).imagen_url, null, 'imagen compartida → sin imagen');
+  assert.deepEqual((await fila('Coca-Cola 400ml (pidela original o ZERO )')).variantes,
+    [{ grupo: 'Tamaño', nombre: 'COCACOLA ZERO', delta: 0 }]);
+  const almuerzos = await db.query(`select disponible_desde, disponible_hasta from public.categorias where id = 'menu_almuerzos'`);
+  assert.deepEqual(almuerzos.rows[0], { disponible_desde: '12:00:00', disponible_hasta: '14:30:00' });
+  const sinImagen = await db.query(`select count(*)::int n from public.platos where origen = 'oficial' and imagen_url is null`);
+  assert.equal(sinImagen.rows[0].n, 2);
+});
+
+test('categorías: el público solo lee; el admin crea y no puede borrar una con platos', async () => {
+  await assert.rejects(como('anon', null, `insert into public.categorias (id, nombre) values ('hack', 'Hack')`));
+  const otro = await como('authenticated', OTRO_ID, `update public.categorias set nombre = 'X' where id = 'pizzas' returning id`);
+  assert.equal(otro.rows.length, 0);
+  await como('authenticated', ADMIN_ID, `insert into public.categorias (id, nombre, orden) values ('temporada', 'Temporada', 20)`);
+  await esperaError(como('authenticated', ADMIN_ID, `delete from public.categorias where id = 'pizzas'`), 'foreign key');
+  const borrada = await como('authenticated', ADMIN_ID, `delete from public.categorias where id = 'temporada' returning id`);
+  assert.equal(borrada.rows.length, 1);
+});
+
+test('platos: un cliente no puede cambiar precios ni productos', async () => {
+  await assert.rejects(como('anon', null, `update public.platos set precio = 1`));
+  const otro = await como('authenticated', OTRO_ID, `update public.platos set precio = 1 returning id`);
+  assert.equal(otro.rows.length, 0);
+});
+
+// ---------------------------------------------------------------------
+// Consulta y cancelación de reservas por el cliente
+// ---------------------------------------------------------------------
+test('mi reserva: se consulta con código + nombre, sin exponer datos de otros', async () => {
+  const r = await reservar(mesas['Mesa 8'], miercoles, '13:00', 'Valentina Reyes', 5);
+  const codigo = String(r.rows[0].id).slice(0, 8);
+  const ok = await como('anon', null, 'select * from public.consultar_reserva($1, $2)', [codigo.toUpperCase(), '  valentina reyes ']);
+  assert.equal(ok.rows.length, 1);
+  assert.equal(ok.rows[0].estado, 'confirmada');
+  assert.equal(ok.rows[0].cancelable, true);
+  assert.ok(!('cliente_contacto' in ok.rows[0]));
+  const otroNombre = await como('anon', null, 'select * from public.consultar_reserva($1, $2)', [codigo, 'Otra Persona']);
+  assert.equal(otroNombre.rows.length, 0);
+  await esperaError(como('anon', null, 'select * from public.consultar_reserva($1, $2)', ['%', 'Valentina Reyes']), 'DATOS_CONSULTA_INVALIDOS');
+});
+
+test('mi reserva: el cliente cancela su reserva futura y libera el horario', async () => {
+  const r = await reservar(mesas['Mesa 8'], miercoles, '20:00', 'Felipe Serrano', 4);
+  const codigo = String(r.rows[0].id).slice(0, 8);
+  await esperaError(como('anon', null, 'select public.cancelar_reserva($1, $2)', [codigo, 'Intruso Total']), 'RESERVA_NO_CANCELABLE');
+  const c = await como('anon', null, 'select public.cancelar_reserva($1, $2) as estado', [codigo, 'Felipe Serrano']);
+  assert.equal(c.rows[0].estado, 'cancelada');
+  await esperaError(como('anon', null, 'select public.cancelar_reserva($1, $2)', [codigo, 'Felipe Serrano']), 'RESERVA_NO_CANCELABLE');
+  const otra = await reservar(mesas['Mesa 8'], miercoles, '20:00', 'Nueva Persona', 2);
+  assert.equal(otra.rows.length, 1, 'el horario cancelado quedó libre');
 });
