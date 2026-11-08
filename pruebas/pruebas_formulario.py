@@ -12,13 +12,17 @@ Qué hace este programa:
   4. Toma una captura al final de cada prueba y genera un reporte PDF.
 
 Base de datos:
-  --real   usa el Supabase del proyecto (necesita .env). Las pruebas de administración
-           necesitan ADMIN_EMAIL_PRUEBAS y ADMIN_PASSWORD_PRUEBAS en variables de entorno
-           (nunca se escriben en el código). Sin ellas esas pruebas salen OMITIDAS.
+  --real   usa el Supabase del proyecto (necesita .env). Las pruebas del PANEL DE
+           ADMINISTRACIÓN necesitan ADMIN_EMAIL_PRUEBAS y ADMIN_PASSWORD_PRUEBAS en variables
+           de entorno (nunca se escriben en el código). Sin ellas esas pruebas salen OMITIDAS.
+           Opcional: USUARIO_PRUEBAS_EMAIL y USUARIO_PRUEBAS_PASSWORD (una cuenta SIN permisos
+           de administración) para la prueba de usuario sin permisos.
   --local  usa una copia local con las mismas migraciones (tests/soporte/supabase-local.mjs);
            no toca la base real. Es el modo por defecto si no existe .env.
   Los datos que crean las pruebas se llaman «PRUEBA SELENIUM» y se eliminan al terminar
-  cada prueba (bloque finally) y otra vez al final de la ejecución.
+  cada prueba (bloque finally) y otra vez al final de la ejecución. Si no hay credenciales
+  del panel, las reservas de prueba se CANCELAN con el código y el nombre (como «Mi reserva»)
+  y así ya no ocupan la mesa.
 
 Cómo ejecutarlo (desde la carpeta del proyecto):
   py pruebas\\pruebas_formulario.py                       -> normal: visible y con pausas
@@ -58,6 +62,7 @@ from selenium.common.exceptions import (
     NoAlertPresentException,
     NoSuchWindowException,
     InvalidSessionIdException,
+    ElementClickInterceptedException,
 )
 
 from reporte_pdf import generar_reporte
@@ -94,7 +99,9 @@ DATOS_VALIDOS = {"nombre": NOMBRE_PRUEBA, "contacto": "300 123 4567", "personas"
 
 # Credenciales de administración: SOLO desde variables de entorno (o generadas para la base local).
 ADMIN = {"correo": os.environ.get("ADMIN_EMAIL_PRUEBAS", ""), "clave": os.environ.get("ADMIN_PASSWORD_PRUEBAS", "")}
-OTRO = {"correo": "", "clave": ""}          # usuario autenticado SIN permisos (solo base local)
+OTRO = {"correo": os.environ.get("USUARIO_PRUEBAS_EMAIL", ""),     # usuario autenticado SIN permisos
+        "clave": os.environ.get("USUARIO_PRUEBAS_PASSWORD", "")}
+CREADAS = []                                # reservas de prueba creadas: (código, nombre)
 SUPA = {"url": "", "clave": ""}             # URL y clave publishable (de js/config.js)
 
 # Navegador que usan todas las funciones (se crea en main)
@@ -223,10 +230,19 @@ def q(texto):
     return urllib.parse.quote(texto, safe="")
 
 
+def registrar_creada(codigo, nombre):
+    CREADAS.append((codigo, nombre))
+
+
 def limpiar_datos_de_prueba():
-    """Elimina todo lo creado con el nombre «PRUEBA SELENIUM» (reservas, mesas y platos)."""
+    """Elimina todo lo creado con el nombre «PRUEBA SELENIUM» (reservas, mesas y platos).
+    Sin credenciales del panel, cancela las reservas creadas (dejan de ocupar la mesa)."""
     if not hay_admin():
+        for codigo, nombre in CREADAS:
+            api("POST", "/rest/v1/rpc/cancelar_reserva", {"p_codigo": codigo, "p_nombre": nombre})
+        CREADAS.clear()
         return
+    CREADAS.clear()
     token = token_de(ADMIN)
     patron = q(f"{NOMBRE_PRUEBA}*")
     api("DELETE", f"/rest/v1/reservas?cliente_nombre=like.{patron}", token=token)
@@ -372,7 +388,14 @@ def hacer_clic(selector_o_elemento, lento=True):
     resaltar(elemento)
     if lento:
         pausa()
-    elemento.click()
+    try:
+        elemento.click()
+    except ElementClickInterceptedException:
+        # La página aún se estaba moviendo (desplazamiento suave): se centra de nuevo y se reintenta.
+        time.sleep(0.6)
+        enfocar(elemento)
+        esperar(EC.element_to_be_clickable(elemento), "El elemento no se puede pulsar.", 5)
+        elemento.click()
     try:
         resaltar(elemento, False)
     except WebDriverException:
@@ -647,9 +670,8 @@ def mesa_para(personas=2):
 
 @prueba("4. Reserva", "Flujo completo: mesa → fecha → hora → datos → confirmación",
         "La confirmación muestra el nombre, la mesa, la fecha, la hora y las personas, y la reserva existe en "
-        "Supabase con esos datos. Al terminar se elimina.")
+        "Supabase con esos datos. Al terminar se elimina (o se cancela si no hay credenciales del panel).")
 def prueba_reserva_completa():
-    necesita_admin()
     mesa = mesa_para(2)
     fecha = fecha_lejana()
     try:
@@ -674,6 +696,7 @@ def prueba_reserva_completa():
         for dato in [NOMBRE_PRUEBA, mesa["nombre"], "8:00 p. m.", str(fecha.day)]:
             comprobar(dato in resumen, f"La confirmación no muestra «{dato}».")
         codigo = re.search(r"Código de reserva: ([0-9A-F]{8})", resumen).group(1)
+        registrar_creada(codigo, NOMBRE_PRUEBA)
         estado, filas = api("POST", "/rest/v1/rpc/consultar_reserva", {"p_codigo": codigo, "p_nombre": NOMBRE_PRUEBA})
         comprobar(estado == 200 and filas, f"La reserva {codigo} no está en Supabase ({estado}).")
         r = filas[0]
@@ -769,12 +792,12 @@ def reservar_por_api(mesa, fecha, hora, nombre=NOMBRE_PRUEBA):
         "p_mesa_id": mesa["id"], "p_fecha": fecha.isoformat(), "p_hora_inicio": hora,
         "p_cliente_nombre": nombre, "p_num_personas": 2})
     comprobar(estado == 200, f"No se pudo crear la reserva de apoyo ({estado} {datos}).")
+    registrar_creada(datos[0]["id"][:8], nombre)
 
 
 @prueba("6. Disponibilidad", "Un horario ocupado aparece tachado",
         "Tras reservar las 9:00 p. m. de una mesa, esa hora y las que se cruzan (8:30 y 9:30) aparecen ocupadas.")
 def prueba_horario_ocupado():
-    necesita_admin()
     mesa, fecha = mesa_para(2), fecha_lejana()
     try:
         reservar_por_api(mesa, fecha, "21:00")
@@ -793,7 +816,6 @@ def prueba_horario_ocupado():
         "queda una reserva en Supabase.",
         errores_esperados=[r"rpc/crear_reserva"])
 def prueba_doble_reserva():
-    necesita_admin()
     mesa, fecha = mesa_para(2), fecha_lejana()
     try:
         ir_a_datos(mesa, fecha, "22:00")
@@ -952,19 +974,27 @@ def prueba_crear_mesa():
         limpiar_datos_de_prueba()
 
 
-@prueba("8. Administración", "Filtros de reservas",
-        "Al filtrar por estado «Cancelada» la tabla solo muestra reservas canceladas (o el mensaje de que no hay).")
+@prueba("8. Administración", "Total de reservas y filtros por periodo",
+        "La tarjeta «Total de reservas» coincide con el total de la base (todas las fechas) y, con «Todas las fechas» "
+        "y estado «Cancelada», la tabla solo muestra reservas canceladas (o el mensaje de que no hay).")
 def prueba_filtros_reservas():
     necesita_admin()
     entrar_al_panel("admin.html#reservas")
-    visible("#f-fecha")
-    js("document.querySelector('#f-fecha').value = ''")
+    tarjeta = visible("[data-testid='total-reservas'] strong")
+    req = urllib.request.Request(SUPA["url"] + "/rest/v1/reservas?select=id", method="HEAD")
+    req.add_header("apikey", SUPA["clave"]); req.add_header("Authorization", f"Bearer {token_de(ADMIN)}")
+    req.add_header("Prefer", "count=exact")
+    with urllib.request.urlopen(req, timeout=20) as r:
+        total_base = int(r.headers["Content-Range"].split("/")[-1])
+    comprobar(int(tarjeta.text) == total_base, f"La tarjeta dice {tarjeta.text} y la base tiene {total_base} reservas.")
+    elegir("#f-periodo", "todas")
     elegir("#f-estado", "cancelada")
     hacer_clic("#filtros button[type='submit']")
     esperar(lambda d: d.find_elements(By.CSS_SELECTOR, "#tabla-reservas .tabla, #tabla-reservas .vacio"), "La tabla no se actualizó.")
     estados = [e.text for e in todos("#tabla-reservas tbody td:nth-child(7)")]
     comprobar(all(e == "Cancelada" for e in estados), f"Con el filtro aparecen: {set(estados)}")
-    return f"{len(estados)} reservas, todas canceladas." if estados else "Sin reservas canceladas: se muestra el estado vacío."
+    detalle = f"{len(estados)} reservas, todas canceladas." if estados else "sin reservas canceladas (se muestra el estado vacío)."
+    return f"Total de reservas = {total_base} (igual que la base). Todas las fechas + Cancelada: {detalle}"
 
 
 @prueba("8. Administración", "Gestión de la carta: crear, editar y eliminar un plato",
@@ -1002,7 +1032,7 @@ def prueba_cerrar_sesion():
     necesita_admin()
     entrar_al_panel("admin.html#mesas")
     hacer_clic("[data-seccion='reservas']")
-    visible("#f-fecha")
+    visible("#f-periodo")
     hacer_clic("#cerrar-sesion")
     esperar(lambda d: en_acceso(), "No volvió a la pantalla de acceso.")
     esperar_alerta("Cerraste sesión")
@@ -1067,7 +1097,6 @@ def prueba_token_url():
         "Una reserva a nombre de «PRUEBA SELENIUM <img src=x onerror=alert(1)>» muestra el texto tal cual, "
         "sin crear la imagen ni ejecutar código. Se elimina al final.")
 def prueba_xss():
-    necesita_admin()
     nombre = f"{NOMBRE_PRUEBA} <img src=x onerror=alert(1)>"
     mesa, fecha = mesa_para(2), fecha_lejana(4)
     try:
@@ -1075,6 +1104,7 @@ def prueba_xss():
         escribir("#nombre", nombre)
         hacer_clic("#confirmar")
         visible("#confirmacion h1")
+        registrar_creada(re.search(r"Código de reserva: ([0-9A-F]{8})", texto("#confirmacion")).group(1), nombre)
         try:
             driver.switch_to.alert
             raise AssertionError("Se ejecutó el código: apareció una alerta.")
@@ -1091,7 +1121,8 @@ def prueba_xss():
         "Una cuenta que no está en la tabla administradores no entra al panel ni puede cambiar precios por la API.")
 def prueba_sin_permisos():
     if not OTRO["correo"]:
-        raise PruebaOmitida("Solo en la base local: en Supabase real no hay una cuenta sin permisos de prueba.")
+        raise PruebaOmitida("Para probarlo en Supabase real crea una cuenta SIN permisos de administración y define "
+                            "USUARIO_PRUEBAS_EMAIL y USUARIO_PRUEBAS_PASSWORD (en la base local se crea sola).")
     iniciar_sesion_admin(credenciales=OTRO)
     esperar_alerta("no tiene permisos")
     comprobar(en_acceso() and sesion_guardada() is None, "El usuario sin permisos quedó dentro.")

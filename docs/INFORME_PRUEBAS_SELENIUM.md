@@ -59,52 +59,61 @@ reserva) declaran exactamente qué petición esperan que falle.
 | 1 | | La prueba exigía el fondo crema también en el panel (que usa otro fondo por diseño); la alerta de «doble reserva» se leía mientras se repintaba. | Ajustes de la prueba (criterio por fuente cargada; lectura con JavaScript). |
 | 2 | **37/37** | — | — |
 
-## 5. Resultado de la última ejecución (base local)
+## 5. Ejecución contra Supabase real (7 nov 2026, 22:35 — Tatiana-ER)
 
-Ejecución del 7 de noviembre de 2026 · Chrome 156 · Selenium 4.52 · Python 3.14 · modo `--rapido --oculto`.
-**37 aprobadas, 0 fallidas, 0 omitidas.** Reporte: `pruebas/reportes/reporte_pruebas_2026-11-07_22-09-02.pdf`.
-Capturas destacadas en `docs/evidencias/selenium/`.
+Resultado: **23 aprobadas, 1 fallida, 13 omitidas** (`pruebas/reportes/reporte_pruebas_2026-11-07_22-35-59.pdf`).
 
-**Pendiente:** ejecutar la misma suite contra el Supabase real (`.env` + `ADMIN_EMAIL_PRUEBAS` y
-`ADMIN_PASSWORD_PRUEBAS`) después de que Tatis aplique `docs/CAMBIOS_SUPABASE.md`. Antes de eso, «Categorías reales» y
-«Solo platos reales» fallarán a propósito, porque la base real aún tiene la carta inventada.
+| Qué pasó | Causa | Qué se hizo |
+|---|---|---|
+| **13. «Personas = 0» FALLIDA** (clic interceptado en «Continuar a tus datos») | No fue un error de la app ni de la persona: al elegir la hora, la página devolvía el foco al botón con un desplazamiento suave y Selenium pulsó mientras la página aún se movía (el botón quedó en el borde inferior de la ventana). | **App:** el foco vuelve sin desplazar la página (`focus({ preventScroll: true })`). **Prueba:** si un clic queda interceptado, centra el botón de nuevo y reintenta una vez. |
+| **12 OMITIDAS por falta de `ADMIN_EMAIL_PRUEBAS` / `ADMIN_PASSWORD_PRUEBAS`** | Son funciones que **sí existen**: el panel de administración (RF-08 a RF-14) tiene inicio de sesión con correo y contraseña. Los clientes no inician sesión, pero el administrador sí. Sin esas variables nadie puede entrar al panel, así que la prueba no se puede hacer. | Se mantienen. Las 4 pruebas que solo creaban **reservas** (flujo completo, horario ocupado, doble reserva y XSS) ya **no** necesitan esas credenciales: si no están, la reserva de prueba se cancela al terminar (como «Mi reserva»). Quedan 8 que de verdad necesitan entrar al panel. |
+| **34. «Usuario sin permisos» OMITIDA** | Necesita una cuenta autenticada que **no** sea administradora; en la base real no existía. | Se mantiene (prueba la seguridad RLS). Para correrla en la base real: crear esa cuenta y definir `USUARIO_PRUEBAS_EMAIL` / `USUARIO_PRUEBAS_PASSWORD`. |
+
+Con las credenciales del panel definidas, la suite completa corre contra la base real; sin ellas, deben esperarse **8 omitidas**
+(o 9 sin la cuenta sin permisos), y ninguna fallida.
+
+## 6. Resultado de la última ejecución (base local, 8 nov 2026)
+
+Chrome 156 · Selenium 4.52 · Python 3.14 · modo `--rapido --oculto --local`. **37 aprobadas, 0 fallidas, 0 omitidas.**
+Reporte: `pruebas/reportes/reporte_pruebas_2026-11-08_10-35-16.pdf`. Incluye las mejoras del 8 de noviembre: barra de categorías
+rediseñada, fotos con proporción fija, fotos de las sodas y total de reservas con filtro por periodo en el panel.
 
 | N.º | Grupo | Prueba | Estado | Resultado obtenido | Consola | Tiempo |
 |---|---|---|---|---|---|---|
-| 1 | 1. Carga de páginas | Carga de index.html | **APROBADA** | Título «Konys Pizza · Reserva tu mesa en Bucaramanga», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 2.5 s |
-| 2 | 1. Carga de páginas | Carga de mesas.html | **APROBADA** | Título «Mesas · Konys Pizza», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 1.2 s |
-| 3 | 1. Carga de páginas | Carga de carta.html | **APROBADA** | Título «Carta · Konys Pizza», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 1.5 s |
+| 1 | 1. Carga de páginas | Carga de index.html | **APROBADA** | Título «Konys Pizza · Reserva tu mesa en Bucaramanga», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 2.3 s |
+| 2 | 1. Carga de páginas | Carga de mesas.html | **APROBADA** | Título «Mesas · Konys Pizza», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 1.3 s |
+| 3 | 1. Carga de páginas | Carga de carta.html | **APROBADA** | Título «Carta · Konys Pizza», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 1.3 s |
 | 4 | 1. Carga de páginas | Carga de contacto.html | **APROBADA** | Título «Contacto · Konys Pizza», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 1.2 s |
-| 5 | 1. Carga de páginas | Carga de reservar.html | **APROBADA** | Título «Reserva tu mesa · Konys Pizza», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 1.7 s |
-| 6 | 1. Carga de páginas | Carga de admin.html | **APROBADA** | Título «Acceso · Panel Konys Pizza», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 0.7 s |
-| 7 | 2. Navegación | Menú principal entre páginas separadas | **APROBADA** | Recorrido Mesas → Carta → Contacto → Inicio → Reservar con la página activa marcada. | Sin errores ni advertencias. | 3.2 s |
-| 8 | 2. Navegación | La consulta rápida del inicio lleva a Mesas | **APROBADA** | Mesas para 2026-11-27 y 4 personas: 6 mesas, todas con capacidad ≥ 4. | Sin errores ni advertencias. | 2.1 s |
+| 5 | 1. Carga de páginas | Carga de reservar.html | **APROBADA** | Título «Reserva tu mesa · Konys Pizza», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 1.1 s |
+| 6 | 1. Carga de páginas | Carga de admin.html | **APROBADA** | Título «Acceso · Panel Konys Pizza», estilos aplicados y contenido cargado. | Sin errores ni advertencias. | 0.6 s |
+| 7 | 2. Navegación | Menú principal entre páginas separadas | **APROBADA** | Recorrido Mesas → Carta → Contacto → Inicio → Reservar con la página activa marcada. | Sin errores ni advertencias. | 3.4 s |
+| 8 | 2. Navegación | La consulta rápida del inicio lleva a Mesas | **APROBADA** | Mesas para 2026-11-28 y 4 personas: 6 mesas, todas con capacidad ≥ 4. | Sin errores ni advertencias. | 1.5 s |
 | 9 | 3. Mesas | Mesas visibles con zona, capacidad y estado | **APROBADA** | 8 mesas activas, todas con zona, capacidad y estado. | Sin errores ni advertencias. | 1.5 s |
-| 10 | 3. Mesas | Filtros por zona y por número de personas | **APROBADA** | Terraza: solo terraza. 6 personas: capacidades [6, 6]. | Sin errores ni advertencias. | 1.9 s |
-| 11 | 4. Reserva | Flujo completo: mesa → fecha → hora → datos → confirmación | **APROBADA** | Reserva 242F92E7: Mesa 1, 23/12/2026 8:00 p. m., 2 personas (eliminada al terminar). | Sin errores ni advertencias. | 4.1 s |
-| 12 | 5. Validaciones | Nombre vacío | **APROBADA** | Error visible, campo marcado y sin petición de guardado. | Sin errores ni advertencias. | 1.9 s |
-| 13 | 5. Validaciones | Personas = 0 | **APROBADA** | La interfaz no baja de 1 y el servidor rechaza 0 personas (PERSONAS_INVALIDAS); nada guardado. | Sin errores ni advertencias. | 2.1 s |
-| 14 | 5. Validaciones | Más personas que la capacidad de la mesa | **APROBADA** | Mesa 1 (hasta 2): bloqueado en la página y rechazado por el servidor. | Sin errores ni advertencias. | 2.6 s |
-| 15 | 5. Validaciones | Contacto inválido | **APROBADA** | Error del teléfono visible y sin petición de guardado. | Sin errores ni advertencias. | 2.6 s |
+| 10 | 3. Mesas | Filtros por zona y por número de personas | **APROBADA** | Terraza: solo terraza. 6 personas: capacidades [6, 6]. | Sin errores ni advertencias. | 1.6 s |
+| 11 | 4. Reserva | Flujo completo: mesa → fecha → hora → datos → confirmación | **APROBADA** | Reserva B0B4060F: Mesa 1, 23/12/2026 8:00 p. m., 2 personas (eliminada al terminar). | Sin errores ni advertencias. | 4.2 s |
+| 12 | 5. Validaciones | Nombre vacío | **APROBADA** | Error visible, campo marcado y sin petición de guardado. | Sin errores ni advertencias. | 1.7 s |
+| 13 | 5. Validaciones | Personas = 0 | **APROBADA** | La interfaz no baja de 1 y el servidor rechaza 0 personas (PERSONAS_INVALIDAS); nada guardado. | Sin errores ni advertencias. | 2.0 s |
+| 14 | 5. Validaciones | Más personas que la capacidad de la mesa | **APROBADA** | Mesa 1 (hasta 2): bloqueado en la página y rechazado por el servidor. | Sin errores ni advertencias. | 1.7 s |
+| 15 | 5. Validaciones | Contacto inválido | **APROBADA** | Error del teléfono visible y sin petición de guardado. | Sin errores ni advertencias. | 2.8 s |
 | 16 | 5. Validaciones | Sin elegir hora | **APROBADA** | Botón desactivado sin hora y habilitado al elegir una. | Sin errores ni advertencias. | 1.4 s |
-| 17 | 6. Disponibilidad | Un horario ocupado aparece tachado | **APROBADA** | 8:30, 9:00 y 9:30 p. m. tachadas; 8:00 y 10:00 p. m. libres. | Sin errores ni advertencias. | 1.2 s |
-| 18 | 6. Disponibilidad | Doble reserva: dos clientes a la vez | **APROBADA** | El segundo cliente vio «Alguien acaba de reservar»; una sola reserva en la base. | Sin errores no previstos (1 mensaje(s) de error provocados a propósito por la prueba: respuesta de rechazo del servidor). | 2.5 s |
-| 19 | 7. Carta | Categorías reales de la carta | **APROBADA** | 15 pestañas: Recomendados, Entradas, Menú Infantil, Pizzas, Desgranados, Papas Ikónicas, Lasaña, Granizados, Sodas, Bebidas Frías, Cerveza, Cocteles, Postres, Menú Almuerzos, Congelados. | Sin errores ni advertencias. | 2.1 s |
-| 20 | 7. Carta | Solo platos reales y disponibles | **APROBADA** | 67 platos visibles, todos oficiales; ningún plato oculto ni inventado. | Sin errores ni advertencias. | 1.9 s |
-| 21 | 7. Carta | Buscador de la carta | **APROBADA** | «limonada» → Limonada de Panela, Limonada de Coco. | Sin errores ni advertencias. | 1.6 s |
-| 22 | 7. Carta | Las fotos de los platos cargan | **APROBADA** | 65 fotos cargadas, 0 rotas. | Sin errores ni advertencias. | 16.5 s |
-| 23 | 8. Administración | Inicio de sesión incorrecto | **APROBADA** | Mensaje de error visible y panel cerrado. | Sin errores no previstos (1 mensaje(s) de error provocados a propósito por la prueba: respuesta de rechazo del servidor). | 1.5 s |
-| 24 | 8. Administración | Inicio de sesión correcto | **APROBADA** | Panel abierto; token solo en sessionStorage. | Sin errores ni advertencias. | 1.3 s |
+| 17 | 6. Disponibilidad | Un horario ocupado aparece tachado | **APROBADA** | 8:30, 9:00 y 9:30 p. m. tachadas; 8:00 y 10:00 p. m. libres. | Sin errores ni advertencias. | 1.3 s |
+| 18 | 6. Disponibilidad | Doble reserva: dos clientes a la vez | **APROBADA** | El segundo cliente vio «Alguien acaba de reservar»; una sola reserva en la base. | Sin errores no previstos (1 mensaje(s) de error provocados a propósito por la prueba: respuesta de rechazo del servidor). | 2.0 s |
+| 19 | 7. Carta | Categorías reales de la carta | **APROBADA** | 15 pestañas: Recomendados, Entradas, Menú Infantil, Pizzas, Desgranados, Papas Ikónicas, Lasaña, Granizados, Sodas, Bebidas Frías, Cerveza, Cocteles, Postres, Menú Almuerzos, Congelados. | Sin errores ni advertencias. | 1.3 s |
+| 20 | 7. Carta | Solo platos reales y disponibles | **APROBADA** | 67 platos visibles, todos oficiales; ningún plato oculto ni inventado. | Sin errores ni advertencias. | 2.0 s |
+| 21 | 7. Carta | Buscador de la carta | **APROBADA** | «limonada» → Limonada de Panela, Limonada de Coco. | Sin errores ni advertencias. | 1.8 s |
+| 22 | 7. Carta | Las fotos de los platos cargan | **APROBADA** | 67 fotos cargadas, 0 rotas. | Sin errores ni advertencias. | 25.9 s |
+| 23 | 8. Administración | Inicio de sesión incorrecto | **APROBADA** | Mensaje de error visible y panel cerrado. | Sin errores no previstos (1 mensaje(s) de error provocados a propósito por la prueba: respuesta de rechazo del servidor). | 1.3 s |
+| 24 | 8. Administración | Inicio de sesión correcto | **APROBADA** | Panel abierto; token solo en sessionStorage. | Sin errores ni advertencias. | 1.8 s |
 | 25 | 8. Administración | Acceso directo al panel sin sesión | **APROBADA** | Se muestra el acceso; la API rechaza leer reservas sin sesión (403). | Sin errores ni advertencias. | 1.6 s |
-| 26 | 8. Administración | Crear mesa y activarla/desactivarla | **APROBADA** | Mesa creada (visible), desactivada (oculta) y reactivada; eliminada al terminar. | Sin errores ni advertencias. | 3.1 s |
-| 27 | 8. Administración | Filtros de reservas | **APROBADA** | Sin reservas canceladas: se muestra el estado vacío. | Sin errores ni advertencias. | 2.2 s |
-| 28 | 8. Administración | Gestión de la carta: crear, editar y eliminar un plato | **APROBADA** | Plato creado oculto (invisible al público), precio editado de $10.000 a $12.000; eliminado al terminar. | Sin errores ni advertencias. | 4.9 s |
-| 29 | 8. Administración | Cerrar sesión (y el botón Atrás no muestra el panel) | **APROBADA** | Acceso visible, sesión borrada y «Atrás» no reabre el panel. | Sin errores ni advertencias. | 4.1 s |
-| 30 | 9. Seguridad | Cierre por inactividad (valor corto solo en localhost) | **APROBADA** | Aviso y «Seguir conectado» funcionan; sin actividad se cerró a los 10.1 s. | Sin errores ni advertencias. | 19.9 s |
+| 26 | 8. Administración | Crear mesa y activarla/desactivarla | **APROBADA** | Mesa creada (visible), desactivada (oculta) y reactivada; eliminada al terminar. | Sin errores ni advertencias. | 2.3 s |
+| 27 | 8. Administración | Total de reservas y filtros por periodo | **APROBADA** | Total de reservas = 0 (igual que la base). Todas las fechas + Cancelada: sin reservas canceladas (se muestra el estado vacío). | Sin errores ni advertencias. | 2.6 s |
+| 28 | 8. Administración | Gestión de la carta: crear, editar y eliminar un plato | **APROBADA** | Plato creado oculto (invisible al público), precio editado de $10.000 a $12.000; eliminado al terminar. | Sin errores ni advertencias. | 4.2 s |
+| 29 | 8. Administración | Cerrar sesión (y el botón Atrás no muestra el panel) | **APROBADA** | Acceso visible, sesión borrada y «Atrás» no reabre el panel. | Sin errores ni advertencias. | 3.8 s |
+| 30 | 9. Seguridad | Cierre por inactividad (valor corto solo en localhost) | **APROBADA** | Aviso y «Seguir conectado» funcionan; sin actividad se cerró a los 10.5 s. | Sin errores ni advertencias. | 20.4 s |
 | 31 | 9. Seguridad | Valor de producción del cierre por inactividad | **APROBADA** | Producción 300 000 ms; en Vercel se ignora ?inactividad; en localhost 10 000 ms. | Sin errores ni advertencias. | 0.6 s |
-| 32 | 9. Seguridad | El token (JWT) nunca aparece en la URL | **APROBADA** | Token falso borrado y sin sesión; navegando el panel la URL nunca contiene el JWT. | Sin errores ni advertencias. | 3.5 s |
-| 33 | 9. Seguridad | Texto con HTML se muestra como texto (XSS) | **APROBADA** | El nombre con HTML se mostró como texto, sin imagen ni alerta. | Sin errores ni advertencias. | 2.0 s |
+| 32 | 9. Seguridad | El token (JWT) nunca aparece en la URL | **APROBADA** | Token falso borrado y sin sesión; navegando el panel la URL nunca contiene el JWT. | Sin errores ni advertencias. | 2.4 s |
+| 33 | 9. Seguridad | Texto con HTML se muestra como texto (XSS) | **APROBADA** | El nombre con HTML se mostró como texto, sin imagen ni alerta. | Sin errores ni advertencias. | 2.1 s |
 | 34 | 9. Seguridad | Usuario autenticado sin permisos de administración | **APROBADA** | Acceso denegado y la API no modificó ningún precio (0 filas). | Sin errores ni advertencias. | 1.2 s |
-| 35 | 9. Seguridad | Cerrar sesión en una pestaña cierra las demás | **APROBADA** | Al cerrar sesión en una pestaña, la otra volvió al acceso. | Sin errores ni advertencias. | 4.2 s |
-| 36 | 10. Responsive | Diseño adaptable en celular (375 px) | **APROBADA** | Sin desbordamiento en: index.html, mesas.html, carta.html, contacto.html, reservar.html, admin.html. | Sin errores ni advertencias. | 5.5 s |
-| 37 | 11. Consola | Recorrido completo sin errores ni advertencias en consola | **APROBADA** | Sin errores ni advertencias en: index.html, mesas.html, carta.html, contacto.html, reservar.html, mi-reserva.html, admin.html, admin#resumen, admin#mesas, admin#horarios, admin#reservas, admin#categorias, admin#carta. | Sin errores ni advertencias. | 14.0 s |
+| 35 | 9. Seguridad | Cerrar sesión en una pestaña cierra las demás | **APROBADA** | Al cerrar sesión en una pestaña, la otra volvió al acceso. | Sin errores ni advertencias. | 4.1 s |
+| 36 | 10. Responsive | Diseño adaptable en celular (375 px) | **APROBADA** | Sin desbordamiento en: index.html, mesas.html, carta.html, contacto.html, reservar.html, admin.html. | Sin errores ni advertencias. | 5.6 s |
+| 37 | 11. Consola | Recorrido completo sin errores ni advertencias en consola | **APROBADA** | Sin errores ni advertencias en: index.html, mesas.html, carta.html, contacto.html, reservar.html, mi-reserva.html, admin.html, admin#resumen, admin#mesas, admin#horarios, admin#reservas, admin#categorias, admin#carta. | Sin errores ni advertencias. | 15.8 s |

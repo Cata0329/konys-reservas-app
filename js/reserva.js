@@ -216,13 +216,13 @@ function pintarPaso2() {
     s.hora = null;
     pintarPaso2();
     pintarResumen();
-    $(`[data-fecha="${s.fecha}"]`)?.focus();
+    $(`[data-fecha="${s.fecha}"]`)?.focus({ preventScroll: true });
   }));
   panel().querySelectorAll('[data-hora]').forEach((b) => b.addEventListener('click', () => {
     s.hora = b.dataset.hora;
     pintarPaso2();
     pintarResumen();
-    $(`[data-hora="${s.hora}"]`)?.focus();
+    $(`[data-hora="${s.hora}"]`)?.focus({ preventScroll: true });
   }));
   panel().querySelectorAll('[data-sugerencia]').forEach((b) => b.addEventListener('click', () => {
     const [mesaId, hora] = b.dataset.sugerencia.split('|');

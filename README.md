@@ -58,6 +58,7 @@ konys-reservas-app/
 │   ├── migrations/002_carta_real.sql         Respaldo + estructura de la carta real
 │   ├── migrations/003_consulta_reservas.sql  Funciones de «Mi reserva»
 │   ├── migrations/004_horarios_reales.sql    Todos los días, dos jornadas
+│   ├── migrations/005_fotos_sodas.sql        Foto oficial de dos sodas
 │   ├── seed.sql                              Mesas y horarios iniciales (instalación nueva)
 │   ├── seed_carta_real.sql                   Carta real: 14 categorías, 67 platos (GENERADO)
 │   └── revertir/revertir_carta_real.sql      Deshace la carta real (probado)
@@ -79,6 +80,7 @@ La guía paso a paso, con comprobaciones y cómo revertir, está en
 2. `supabase/seed_carta_real.sql`
 3. `supabase/migrations/003_consulta_reservas.sql`
 4. `supabase/migrations/004_horarios_reales.sql`
+5. `supabase/migrations/005_fotos_sodas.sql`
 
 (En una instalación desde cero, antes van `001_esquema_inicial.sql` y `seed.sql`.)
 
@@ -108,6 +110,7 @@ cp .env.example .env
 | `SUPABASE_PUBLISHABLE_KEY` | Project Settings → API Keys → *Publishable key* (o *anon public*) | `.env` y Vercel |
 | `CONTACTO_WHATSAPP`, `CONTACTO_INSTAGRAM` | Opcionales (pie de página) | `.env` y Vercel |
 | `ADMIN_EMAIL_PRUEBAS`, `ADMIN_PASSWORD_PRUEBAS` | Credenciales del panel **solo para las pruebas Selenium** | Variables de entorno de tu terminal, **nunca** en archivos |
+| `USUARIO_PRUEBAS_EMAIL`, `USUARIO_PRUEBAS_PASSWORD` | Opcional: una cuenta **sin** permisos de administración para la prueba de seguridad | Variables de entorno |
 
 `ADMIN_EMAIL` ya no existe: el panel pide correo y contraseña, así el correo del administrador no viaja en la
 configuración pública. Nunca uses la clave `service_role` / `sb_secret_…`: el script se niega a generar la
@@ -134,7 +137,7 @@ y la página avisa qué falta configurar.
 npm test
 ```
 
-48 pruebas: disponibilidad, validaciones, control de inactividad, CSP y las migraciones SQL reales sobre PostgreSQL
+49 pruebas: disponibilidad, validaciones, control de inactividad, CSP y las migraciones SQL reales sobre PostgreSQL
 embebido (solapamientos, cancelaciones, capacidad, turnos, carta real, horarios, reversión y RLS por rol).
 
 ### Selenium (recorridos en Chrome)
@@ -151,8 +154,10 @@ py pruebas/pruebas_formulario.py --rapido --oculto
 
 - Con `.env` (o `--real`) prueba contra **Supabase real**; con `--local` (o sin `.env`) usa una copia local con las
   mismas migraciones y no toca la base real.
-- Para las pruebas del panel, define antes `ADMIN_EMAIL_PRUEBAS` y `ADMIN_PASSWORD_PRUEBAS`
-  (`set ADMIN_EMAIL_PRUEBAS=...` en cmd). Sin ellas salen **OMITIDAS**.
+- Para las pruebas del **panel de administración** (login, mesas, carta, reservas, inactividad, cerrar sesión), define antes
+  `ADMIN_EMAIL_PRUEBAS` y `ADMIN_PASSWORD_PRUEBAS` (`set ADMIN_EMAIL_PRUEBAS=...` en cmd). Sin ellas salen **OMITIDAS**:
+  no es un error, es que nadie puede entrar al panel sin contraseña.
+- Las pruebas de reserva ya no dependen de esas credenciales: si no están, la reserva de prueba se cancela al terminar.
 - Los datos que crean se llaman «PRUEBA SELENIUM» y se borran al terminar cada prueba, aunque falle.
 
 | Grupo | Qué se prueba |
