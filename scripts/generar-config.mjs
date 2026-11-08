@@ -36,7 +36,11 @@ function esClaveSecreta(clave) {
   }
 }
 
-const env = { ...(await leerEnv()), ...process.env };
+// --pruebas: apunta al Supabase local de tests/soporte/supabase-local.mjs (nunca a la base real).
+const PRUEBAS = process.argv.includes('--pruebas');
+const env = PRUEBAS
+  ? { SUPABASE_URL: 'http://localhost:54321', SUPABASE_PUBLISHABLE_KEY: 'clave-publica-local', ADMIN_EMAIL: process.env.ADMIN_EMAIL_PRUEBA || 'admin@konys.test' }
+  : { ...(await leerEnv()), ...process.env };
 const valor = (nombre) => (env[nombre] ?? '').trim();
 
 const config = {
@@ -65,4 +69,4 @@ const contenido = `// Archivo generado por scripts/generar-config.mjs — NO edi
 export default ${JSON.stringify(config, null, 2)};
 `;
 await writeFile(new URL('js/config.js', raiz), contenido, 'utf8');
-console.log('✔  js/config.js generado.');
+console.log(`✔  js/config.js generado${PRUEBAS ? ' (modo PRUEBAS: Supabase local)' : ''}.`);

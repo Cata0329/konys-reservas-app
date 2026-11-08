@@ -9,3 +9,8 @@ node_modules/
 .vercel/
 .DS_Store
 Thumbs.db
+
+# Python y resultados de Selenium (las evidencias elegidas están en docs/evidencias/)
+__pycache__/
+*.pyc
+tests/selenium/resultados/capturas_*/

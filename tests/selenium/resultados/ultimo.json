@@ -1,0 +1,495 @@
+{
+  "fecha": "2026-11-07_18-59-41",
+  "chrome": "156.0.8078.80",
+  "resultados": [
+    {
+      "codigo": "F01",
+      "grupo": "Funcional",
+      "nombre": "La página principal carga con mesas activas y sin errores",
+      "estado": "APROBADA",
+      "obtenido": "8 mesas activas visibles; la Mesa 9 (inactiva) no aparece.",
+      "duracion": 2.1,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/F01.png"
+    },
+    {
+      "codigo": "F02",
+      "grupo": "Funcional",
+      "nombre": "Navegación entre secciones y páginas",
+      "estado": "APROBADA",
+      "obtenido": "Carta (ancla), Mi reserva y Reservar se abren correctamente.",
+      "duracion": 3.7,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/F02.png"
+    },
+    {
+      "codigo": "F03",
+      "grupo": "Funcional",
+      "nombre": "Las categorías de la carta corresponden al menú oficial",
+      "estado": "APROBADA",
+      "obtenido": "15 pestañas (Recomendados + 14 categorías) en el mismo orden que la fuente oficial.",
+      "duracion": 1.0,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/F03.png"
+    },
+    {
+      "codigo": "F04",
+      "grupo": "Funcional",
+      "nombre": "Solo se muestran productos reales con su precio oficial",
+      "estado": "APROBADA",
+      "obtenido": "67 productos visibles = 67 oficiales; precios iguales; 0 platos ficticios.",
+      "duracion": 8.3,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/F04.png"
+    },
+    {
+      "codigo": "F05",
+      "grupo": "Funcional",
+      "nombre": "Las fotos oficiales cargan y los productos sin foto lo indican",
+      "estado": "APROBADA",
+      "obtenido": "71 fotos oficiales mostradas (incluye repetidas en Recomendados), 0 rotas; 2 productos rotulados «sin foto oficial».",
+      "duracion": 11.2,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/F05.png"
+    },
+    {
+      "codigo": "F06",
+      "grupo": "Funcional",
+      "nombre": "Menú Almuerzos muestra su franja de 12:00 a 2:30 p. m.",
+      "estado": "APROBADA",
+      "obtenido": "Aviso de franja visible y los 3 productos oficiales de almuerzo.",
+      "duracion": 1.4,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/F06.png"
+    },
+    {
+      "codigo": "F07",
+      "grupo": "Funcional",
+      "nombre": "Consulta de mesas disponibles por fecha y hora",
+      "estado": "APROBADA",
+      "obtenido": "Filtro de 6 personas para 2026-11-08: Mesa 5, Mesa 8.",
+      "duracion": 1.1,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/F07.png"
+    },
+    {
+      "codigo": "F08",
+      "grupo": "Funcional",
+      "nombre": "Consulta de horarios: calendario y horas según la configuración",
+      "estado": "APROBADA",
+      "obtenido": "14 horas para el 2026-11-11 (almuerzo 12:30–1:30, noche 5:00–10:00); los lunes están cerrados.",
+      "duracion": 0.8,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/F08.png"
+    },
+    {
+      "codigo": "F09",
+      "grupo": "Funcional",
+      "nombre": "Creación de una reserva y verificación en la base de datos",
+      "estado": "APROBADA",
+      "obtenido": "Reserva 61D6A336 guardada: Mesa 3, 2026-11-12 12:30, 3 personas, estado confirmada.",
+      "duracion": 2.8,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/F09.png"
+    },
+    {
+      "codigo": "F10",
+      "grupo": "Funcional",
+      "nombre": "Validación de formularios (nombre vacío y capacidad excedida)",
+      "estado": "APROBADA",
+      "obtenido": "Nombre vacío marcado; 4 personas en Mesa 1 bloqueado en la interfaz y rechazado por el servidor (400).",
+      "duracion": 1.8,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/F10.png"
+    },
+    {
+      "codigo": "F11",
+      "grupo": "Funcional",
+      "nombre": "Prevención de reservas duplicadas (dos clientes a la vez)",
+      "estado": "APROBADA",
+      "obtenido": "Mesa 7 2026-11-14 12:30: el segundo cliente recibió «Alguien acaba de reservar»; 1 sola reserva en la base.",
+      "duracion": 2.3,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [
+        {
+          "nivel": "SEVERE",
+          "mensaje": "http://localhost:54321/rest/v1/rpc/crear_reserva - Failed to load resource: the server responded with a status of 400 (Bad Request)"
+        },
+        {
+          "estado": 400,
+          "url": "http://localhost:54321/rest/v1/rpc/crear_reserva"
+        }
+      ],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/F11.png"
+    },
+    {
+      "codigo": "F12",
+      "grupo": "Funcional",
+      "nombre": "Mi reserva: consulta y cancelación por el cliente",
+      "estado": "APROBADA",
+      "obtenido": "Con nombre equivocado no se muestra nada; con el correcto se ve y se cancela; la franja 12:30 quedó libre.",
+      "duracion": 2.9,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/F12.png"
+    },
+    {
+      "codigo": "A01",
+      "grupo": "Funcional",
+      "nombre": "Inicio de sesión administrativo (incorrecto y correcto)",
+      "estado": "APROBADA",
+      "obtenido": "Contraseña incorrecta rechazada; correcta abre el panel; sesión solo en sessionStorage.",
+      "duracion": 2.0,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [
+        {
+          "nivel": "SEVERE",
+          "mensaje": "http://localhost:54321/auth/v1/token?grant_type=password - Failed to load resource: the server responded with a status of 400 (Bad Request)"
+        },
+        {
+          "estado": 400,
+          "url": "http://localhost:54321/auth/v1/token?grant_type=password"
+        }
+      ],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/A01.png"
+    },
+    {
+      "codigo": "A02",
+      "grupo": "Funcional",
+      "nombre": "Gestión de mesas: crear, desactivar y eliminar",
+      "estado": "APROBADA",
+      "obtenido": "Mesa creada (visible al público), desactivada (oculta), Mesa 2 con historial protegida, mesa nueva eliminada.",
+      "duracion": 4.7,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [
+        {
+          "nivel": "SEVERE",
+          "mensaje": "http://localhost:54321/rest/v1/mesas?id=eq.2&select=id - Failed to load resource: the server responded with a status of 409 (Conflict)"
+        },
+        {
+          "estado": 409,
+          "url": "http://localhost:54321/rest/v1/mesas?id=eq.2&select=id"
+        }
+      ],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/A02.png"
+    },
+    {
+      "codigo": "A03",
+      "grupo": "Funcional",
+      "nombre": "Gestión de horarios: editar y validar una jornada",
+      "estado": "APROBADA",
+      "obtenido": "Martes noche cambiado a 5:00–10:00 p. m.; el servidor rechaza una reserva a las 9:30 p. m. (FUERA_DE_HORARIO).",
+      "duracion": 1.9,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/A03.png"
+    },
+    {
+      "codigo": "A04",
+      "grupo": "Funcional",
+      "nombre": "Gestión de reservas: filtrar y cambiar estado",
+      "estado": "APROBADA",
+      "obtenido": "Filtro por estado aplicado y una reserva pasó a «completada» en la base.",
+      "duracion": 2.6,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/A04.png"
+    },
+    {
+      "codigo": "A05",
+      "grupo": "Funcional",
+      "nombre": "Gestión de categorías: crear, editar y proteger las que tienen platos",
+      "estado": "APROBADA",
+      "obtenido": "Categoría creada (con validación del identificador), editada y eliminada; «Pizzas» protegida.",
+      "duracion": 4.7,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/A05.png"
+    },
+    {
+      "codigo": "A06",
+      "grupo": "Funcional",
+      "nombre": "Gestión de platos: crear sin precio, ocultar y eliminar",
+      "estado": "APROBADA",
+      "obtenido": "Plato sin precio guardado como «por confirmar», ocultado y eliminado; los 7 platos de prueba se identifican.",
+      "duracion": 4.2,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/A06.png"
+    },
+    {
+      "codigo": "A07",
+      "grupo": "Funcional",
+      "nombre": "Cierre de sesión manual",
+      "estado": "APROBADA",
+      "obtenido": "Sesión cerrada, almacenamiento limpio y /admin#reservas pide contraseña.",
+      "duracion": 3.2,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/A07.png"
+    },
+    {
+      "codigo": "S01",
+      "grupo": "Seguridad",
+      "nombre": "Acceso directo al panel sin autenticación",
+      "estado": "APROBADA",
+      "obtenido": "Se muestra el acceso; la API rechaza leer reservas como anónimo (403).",
+      "duracion": 1.3,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/S01.png"
+    },
+    {
+      "codigo": "S02",
+      "grupo": "Seguridad",
+      "nombre": "Usuario autenticado SIN permisos de administración",
+      "estado": "APROBADA",
+      "obtenido": "Acceso denegado en la interfaz; por API: actualizar precio → 0 filas, leer reservas → 0 filas, crear categoría → 403.",
+      "duracion": 1.3,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/S02.png"
+    },
+    {
+      "codigo": "S03",
+      "grupo": "Seguridad",
+      "nombre": "Token manipulado",
+      "estado": "APROBADA",
+      "obtenido": "La API responde 401 al token alterado y el panel vuelve a pedir contraseña.",
+      "duracion": 1.7,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [
+        {
+          "nivel": "SEVERE",
+          "mensaje": "http://localhost:54321/rest/v1/mesas?select=id%2Cnombre%2Czona%2Ccapacidad%2Cactiva%2Cfoto_url&order=id.asc - Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+        },
+        {
+          "estado": 401,
+          "url": "http://localhost:54321/rest/v1/mesas?select=id%2Cnombre%2Czona%2Ccapacidad%2Cactiva%2Cfoto_url&order=id.asc"
+        }
+      ],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/S03.png"
+    },
+    {
+      "codigo": "S04",
+      "grupo": "Seguridad",
+      "nombre": "Token vencido",
+      "estado": "APROBADA",
+      "obtenido": "Token vencido: 401 en la API y el panel pide iniciar sesión.",
+      "duracion": 0.8,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/S04.png"
+    },
+    {
+      "codigo": "S05",
+      "grupo": "Seguridad",
+      "nombre": "Reutilizar una sesión ya cerrada",
+      "estado": "APROBADA",
+      "obtenido": "Restaurar la sesión copiada no reabre el panel; Auth responde 403 (sesión revocada).",
+      "duracion": 1.9,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [
+        {
+          "nivel": "SEVERE",
+          "mensaje": "http://localhost:54321/auth/v1/user - Failed to load resource: the server responded with a status of 403 (Forbidden)"
+        },
+        {
+          "estado": 403,
+          "url": "http://localhost:54321/auth/v1/user"
+        }
+      ],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/S05.png"
+    },
+    {
+      "codigo": "S06",
+      "grupo": "Seguridad",
+      "nombre": "Tokens en la URL: se ignoran y se borran",
+      "estado": "APROBADA",
+      "obtenido": "URL limpiada a «/admin» y no se inició sesión.",
+      "duracion": 0.4,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/S06.png"
+    },
+    {
+      "codigo": "S07",
+      "grupo": "Seguridad",
+      "nombre": "Operaciones administrativas sin autorización (solicitudes reales)",
+      "estado": "APROBADA",
+      "obtenido": "Todas rechazadas: leer reservas → 403, insertar reserva directa → 403, cambiar precio → 403, desactivar mesa → 403, borrar horario → 403, crear categoría → 403, leer administradores → 403.",
+      "duracion": 0.1,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/S07.png"
+    },
+    {
+      "codigo": "S08",
+      "grupo": "Seguridad",
+      "nombre": "Protección frente a intentos repetidos de acceso",
+      "estado": "APROBADA",
+      "obtenido": "Tras 5 contraseñas incorrectas el formulario se bloquea 60 s (Supabase Auth también limita en el servidor).",
+      "duracion": 2.5,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [
+        {
+          "nivel": "SEVERE",
+          "mensaje": "http://localhost:54321/auth/v1/token?grant_type=password - Failed to load resource: the server responded with a status of 400 (Bad Request)"
+        },
+        {
+          "nivel": "SEVERE",
+          "mensaje": "http://localhost:54321/auth/v1/token?grant_type=password - Failed to load resource: the server responded with a status of 400 (Bad Request)"
+        },
+        {
+          "nivel": "SEVERE",
+          "mensaje": "http://localhost:54321/auth/v1/token?grant_type=password - Failed to load resource: the server responded with a status of 400 (Bad Request)"
+        },
+        {
+          "nivel": "SEVERE",
+          "mensaje": "http://localhost:54321/auth/v1/token?grant_type=password - Failed to load resource: the server responded with a status of 400 (Bad Request)"
+        },
+        {
+          "nivel": "SEVERE",
+          "mensaje": "http://localhost:54321/auth/v1/token?grant_type=password - Failed to load resource: the server responded with a status of 400 (Bad Request)"
+        },
+        {
+          "estado": 400,
+          "url": "http://localhost:54321/auth/v1/token?grant_type=password"
+        },
+        {
+          "estado": 400,
+          "url": "http://localhost:54321/auth/v1/token?grant_type=password"
+        },
+        {
+          "estado": 400,
+          "url": "http://localhost:54321/auth/v1/token?grant_type=password"
+        },
+        {
+          "estado": 400,
+          "url": "http://localhost:54321/auth/v1/token?grant_type=password"
+        },
+        {
+          "estado": 400,
+          "url": "http://localhost:54321/auth/v1/token?grant_type=password"
+        }
+      ],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/S08.png"
+    },
+    {
+      "codigo": "I01",
+      "grupo": "Inactividad",
+      "nombre": "La actividad reinicia el contador y la inactividad cierra la sesión",
+      "estado": "APROBADA",
+      "obtenido": "Con actividad siguió abierta 15 s; sin actividad se cerró a los 8.5 s con el mensaje de inactividad.",
+      "duracion": 28.4,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/I01.png"
+    },
+    {
+      "codigo": "I02",
+      "grupo": "Inactividad",
+      "nombre": "Tras expirar no se pueden hacer operaciones y al volver a entrar el control se reinicia",
+      "estado": "APROBADA",
+      "obtenido": "Tras expirar el panel se oculta y la sesión queda revocada (403); al reingresar el contador empieza de cero.",
+      "duracion": 17.6,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/I02.png"
+    },
+    {
+      "codigo": "I03",
+      "grupo": "Inactividad",
+      "nombre": "El valor de producción es 5 minutos y el corto solo funciona en localhost",
+      "estado": "APROBADA",
+      "obtenido": "Producción: 300 000 ms (5 min); ?inactividad=8 solo se acepta en localhost.",
+      "duracion": 0.2,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/I03.png"
+    },
+    {
+      "codigo": "C01",
+      "grupo": "Consola",
+      "nombre": "Recorrido completo sin errores de consola ni de red",
+      "estado": "APROBADA",
+      "obtenido": "Sin errores en: index, reservar.html, reservar.html?mesa=4, mi-reserva.html, admin, admin#resumen, admin#mesas, admin#horarios, admin#reservas, admin#categorias, admin#carta, index (móvil 390 px).",
+      "duracion": 7.8,
+      "errores_consola": [],
+      "errores_red": [],
+      "avisos_consola": [],
+      "previstos": [],
+      "captura": "tests/selenium/resultados/capturas_2026-11-07_18-59-41/C01.png"
+    }
+  ]
+}
