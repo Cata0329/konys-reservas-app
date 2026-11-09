@@ -10,7 +10,9 @@ export const ORIGEN_IMAGENES_MENU = 'https://pub-6de3a37544604346a69b9836aed1c6c
  * Supabase local de pruebas en http://localhost:54321).
  */
 export function construirCsp(extras = []) {
-  const conexion = ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co', ...extras].join(' ');
+  // cdn.jsdelivr.net/sm/: los mapas de código (.map) de supabase-js. Solo los pide la consola de
+  // desarrollador (F12); sin este permiso aparecen como errores de CSP al abrirla.
+  const conexion = ["'self'", 'https://*.supabase.co', 'wss://*.supabase.co', 'https://cdn.jsdelivr.net/sm/', ...extras].join(' ');
   return [
     "default-src 'self'",
     "script-src 'self' https://cdn.jsdelivr.net",
