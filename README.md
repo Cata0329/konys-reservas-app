@@ -7,15 +7,17 @@ Proyecto del curso de la Universidad de Santander (UDES), prof. Carlos Carrascal
 - **Frontend:** HTML5, CSS3 y JavaScript vanilla (módulos ES), sin framework ni compilación.
 - **Backend:** Supabase (PostgreSQL, Auth y Storage) con Row Level Security.
 - **Pruebas:** Node `node:test` + PGlite (lógica y SQL) y Selenium con Python (recorridos en Chrome).
-- **Despliegue:** Vercel. **Diseño:** fiel a Figma (capturas en `docs/diseno/`).
+- **Despliegue:** Vercel. **Diseño:** mockups de baja fidelidad en `docs/mockups-baja-fidelidad/` y diseño de alta fidelidad de Figma en `docs/diseno/`.
 
-> **Aplicación:** <https://konys-reservas-app.vercel.app/> · **Video:** _pendiente_
+> **Aplicación:** <https://konys-reservas-app-pruebas.vercel.app/> · **Video:** _pendiente_
 
 ## Documentación
 
 | Documento | Contenido |
 |---|---|
 | [`docs/Konys_Pizza_-_Sistema_de_Reservas.pdf`](docs/Konys_Pizza_-_Sistema_de_Reservas.pdf) | Documento del proyecto (requisitos) |
+| [`docs/mockups-baja-fidelidad/`](docs/mockups-baja-fidelidad/) | Mockups de baja fidelidad (figuras 1 a 6 del documento): inicio, reserva, móvil, acceso, reservas y mesas |
+| [`docs/diseno/`](docs/diseno/) | Diseño de alta fidelidad de Figma (12 pantallas de cliente y administrador) |
 | [`docs/INFORME_AUDITORIA.md`](docs/INFORME_AUDITORIA.md) | Requisito por requisito (RF, RNF y entregables): cumple / parcial / falta |
 | [`docs/CAMBIOS_SUPABASE.md`](docs/CAMBIOS_SUPABASE.md) | **Para Tatis:** qué SQL ejecutar, en qué orden, cómo comprobarlo y cómo revertirlo |
 | [`docs/CATALOGO_KONYS.md`](docs/CATALOGO_KONYS.md) | Carta real (67 productos), decisiones de modelado e imágenes |
@@ -95,7 +97,7 @@ Para actualizar la carta en el futuro: `npm run menu:extraer` → `npm run menu:
    select id, 'Administrador' from auth.users where email = 'tu-correo@ejemplo.com';
    ```
 2. Desactivar **Allow new users to sign up**.
-3. *URL Configuration*: Site URL = `https://konys-reservas-app.vercel.app`; Redirect URLs = esa URL y `http://localhost:5173`.
+3. *URL Configuration*: Site URL = `https://konys-reservas-app-pruebas.vercel.app`; Redirect URLs = esa URL y `http://localhost:5173`.
 4. Dejar activos los *Rate Limits* de inicio de sesión. Recomendado: *JWT expiry* de 600–900 s.
 
 ### 3. Variables de entorno

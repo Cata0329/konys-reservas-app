@@ -47,8 +47,8 @@ RF-01 a RF-14, RNF-01 a RNF-09 y los entregables de las secciones 15 y 17.
 | Repositorio con nombre descriptivo, `.gitignore`, sin secretos | ✅ | `.env` y `js/config.js` ignorados; solo clave *publishable* |
 | README con descripción, tecnologías, enlace de la app, enlace del video e instrucciones | 🟡 | Falta el **enlace del video** |
 | Carpeta `/docs` con el documento del proyecto | ✅ | `docs/Konys_Pizza_-_Sistema_de_Reservas.pdf` |
-| Mockups de **baja fidelidad** en `/docs` | ❌ | En `docs/diseno/` están los de **alta** fidelidad de Figma; los wireframes de baja fidelidad del grupo no están en el repositorio |
-| Aplicación desplegada en Vercel conectada a Supabase | 🟡 | Desplegada, pero con una versión antigua (sección 4) |
+| Mockups de **baja fidelidad** en `/docs` | ✅ | `docs/mockups-baja-fidelidad/`: las 6 figuras del documento como imágenes (cliente y administrador). La alta fidelidad sigue en `docs/diseno/` |
+| Aplicación desplegada en Vercel conectada a Supabase | ✅ | <https://konys-reservas-app-pruebas.vercel.app> (8 nov 2026: versión actual, conectada a Supabase) |
 | Video explicativo (5–8 min) | ❌ | Pendiente del grupo |
 | Evidencia de commits (captura de la pestaña Commits) | ❌ | Pendiente del grupo |
 

@@ -97,7 +97,7 @@ select count(*) from public.platos where origen = 'oficial' and imagen_url is nu
 
 ### Paso 6 — comprobar desde la página
 
-1. Abre <https://konys-reservas-app.vercel.app/carta.html> (después del nuevo despliegue): deben verse 15 pestañas
+1. Abre <https://konys-reservas-app-pruebas.vercel.app/carta.html> (después del nuevo despliegue): deben verse 15 pestañas
    empezando por «Recomendados» y fotos reales.
 2. En el panel (`/admin`), sección **Carta**, filtra «Origen: Dato de prueba»: deben aparecer los 7 platos inventados,
    ocultos. Si el equipo decide borrarlos, se eliminan desde ahí (no tienen dependencias).
@@ -105,7 +105,7 @@ select count(*) from public.platos where origen = 'oficial' and imagen_url is nu
 ## 3. Configuración de Authentication (una sola vez)
 
 1. **Authentication → Sign In / Providers**: desactiva **Allow new users to sign up**.
-2. **Authentication → URL Configuration**: *Site URL* = `https://konys-reservas-app.vercel.app`; *Redirect URLs* = esa
+2. **Authentication → URL Configuration**: *Site URL* = `https://konys-reservas-app-pruebas.vercel.app`; *Redirect URLs* = esa
    misma URL y `http://localhost:5173`.
 3. **Authentication → Rate Limits**: deja activos los límites de inicio de sesión.
 4. El panel ahora pide **correo y contraseña** (el correo ya no viaja en la configuración pública). El administrador debe
