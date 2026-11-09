@@ -155,8 +155,11 @@ export async function iniciarSesion(email, password) {
  * (scope global) y borra la sesión guardada en el navegador. Si el servidor
  * no responde, igualmente se borra la sesión local.
  */
-export async function cerrarSesion() {
+export async function cerrarSesion({ soloLocal = false } = {}) {
   if (!supabase) return;
+  // soloLocal: la sesión ya se cerró en el servidor (otra pestaña o token inválido);
+  // pedirlo de nuevo devolvería 403 «session_not_found». Solo se borra la copia local.
+  if (soloLocal) { await supabase.auth.signOut({ scope: 'local' }); return; }
   const { error } = await supabase.auth.signOut({ scope: 'global' });
   if (error) await supabase.auth.signOut({ scope: 'local' });
 }
