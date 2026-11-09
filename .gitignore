@@ -13,3 +13,6 @@ Thumbs.db
 # Python
 __pycache__/
 *.pyc
+
+# Resultado de la última ejecución de Selenium (cambia en cada corrida; el PDF queda como evidencia)
+pruebas/reportes/ultimo_resultado.json

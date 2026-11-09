@@ -92,6 +92,17 @@ navegador cancelaba una petición durante la espera. Ya ignora las peticiones ca
 **37 aprobadas, 0 fallidas, 0 omitidas** — `pruebas/reportes/reporte_pruebas_2026-11-08_18-46-23.pdf`. Falta repetirla contra
 la base real con las variables `ADMIN_EMAIL_PRUEBAS` / `ADMIN_PASSWORD_PRUEBAS`.
 
+## 5c. Tercera ejecución contra Supabase real (8 nov 2026 — Tatiana)
+
+Resultado: **36 aprobadas, 1 fallida, 0 omitidas**. Las tres fallas de la sección 5b ya no aparecen.
+
+| Prueba | Qué pasó | Causa | Corrección |
+|---|---|---|---|
+| **35. Cerrar sesión en una pestaña cierra las demás**: consola con `auth/v1/logout?scope=global` → **403** | La segunda pestaña sí volvió al acceso, pero dejó un error de red en la consola. | **Error real de la app:** la primera pestaña cierra la sesión en Supabase para todos los dispositivos (`scope: global`). La segunda pestaña, al enterarse, pedía cerrarla otra vez en el servidor, y Supabase responde 403 `session_not_found` porque esa sesión ya no existe. La copia local no devolvía ese 403, por eso pasaba aquí. | **App:** cuando el cierre viene de otra pestaña, o la sesión ya no es válida, solo se borra la sesión de esa pestaña (`signOut({ scope: 'local' })`), sin petición al servidor. **Copia local:** ahora responde 403 igual que Supabase al cerrar una sesión ya cerrada. |
+
+`pruebas/reportes/ultimo_resultado.json` deja de guardarse en Git: cambia en cada ejecución y causaba conflictos cuando dos
+personas corrían las pruebas. El resultado de cada ejecución sigue quedando en su PDF.
+
 ## 6. Resultado de la última ejecución (base local, 8 nov 2026)
 
 Chrome 156 · Selenium 4.52 · Python 3.14 · modo `--rapido --oculto --local`. **37 aprobadas, 0 fallidas, 0 omitidas.**
