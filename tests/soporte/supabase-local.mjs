@@ -161,6 +161,10 @@ function auth(req, url, cuerpo) {
     return { estado: 200, datos: { id: carga.sub, email: carga.email, aud: 'authenticated', role: 'authenticated' } };
   }
   if (ruta === '/logout') {
+    // Igual que Supabase: cerrar una sesión que ya se cerró responde 403 session_not_found.
+    if (carga && !sesiones.get(carga.session_id)?.activa) {
+      return { estado: 403, datos: { code: 'session_not_found', msg: 'Session from session_id claim in JWT does not exist' } };
+    }
     if (carga) {
       const sesion = sesiones.get(carga.session_id);
       if (sesion) sesion.activa = false;

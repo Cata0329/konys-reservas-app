@@ -183,7 +183,10 @@ async function salir(motivo, { propagar = true } = {}) {
   mostrarAcceso(alerta('info', 'Cerrando sesión…'));
   $('#btn-ingresar').disabled = true;
   if (estabaDentro || motivo !== 'manual') {
-    try { await api.cerrarSesion(); } catch { /* cerrarSesion ya borra la sesión local si el servidor falla */ }
+    // Si otra pestaña ya cerró la sesión (propagar=false) o el token ya no es válido, el servidor
+    // no tiene nada que cerrar: solo se borra la sesión de esta pestaña, sin petición (evita un 403).
+    const soloLocal = !propagar || motivo === 'expirada';
+    try { await api.cerrarSesion({ soloLocal }); } catch { /* cerrarSesion ya borra la sesión local si el servidor falla */ }
   }
   borrar(CLAVE_SESION); // por si el navegador no terminó de borrarla
   $('#acceso-alerta').innerHTML = mensajes[motivo] ?? '';
